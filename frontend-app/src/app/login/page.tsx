@@ -7,101 +7,101 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: any) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
       const res = await apiRequest("/login", "POST", form);
-
       const token = res.access_token;
+
       if (!token) {
         setError("No token received from server");
         return;
       }
 
       localStorage.setItem("token", token);
-
       router.push("/dashboard");
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err?.response?.data?.message || err?.message || "Login failed");
+      setError(err?.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-4">
-      <form
-        onSubmit={handleLogin}
-        className="bg-gray-900 bg-opacity-90 backdrop-blur-md p-10 rounded-3xl shadow-2xl w-1/2 max-w-md transition-transform transform hover:scale-105"
-      >
-        <h2 className="text-3xl font-extrabold text-white mb-8 text-center tracking-wide">
-          Login
-        </h2>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-purple-700 to-blue-600 px-4">
+      
+      {/* White Card */}
+      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-xl">
+        
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-900 tracking-wide">
+          ACCOUNT LOGIN
+        </h1>
 
-        {error && (
-          <p className="bg-red-700 bg-opacity-60 text-red-100 py-2 px-4 rounded text-center mb-4 animate-pulse">
-            {error}
-          </p>
-        )}
+        <form onSubmit={handleLogin}>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          value={form.email}
-          onChange={handleChange}
-          required
-          className="w-full mb-4 px-5 py-3 rounded-2xl bg-gray-800 text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-500 transition"
-        />
+          {/* Inputs */}
+          <div className="flex w-full border border-gray-300 rounded-t-xl overflow-hidden">
+            <input
+              type="email"
+              name="email"
+              placeholder="User name"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className="w-1/2 px-4 py-3 outline-none border-r border-gray-300"
+            />
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          required
-          className="w-full mb-6 px-5 py-3 rounded-2xl bg-gray-800 text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 transition"
-        />
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className="w-1/2 px-4 py-3 outline-none"
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-3 rounded-2xl text-white font-bold text-lg transition ${
-            loading
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-gradient-to-r from-purple-600 via-pink-500 to-red-500 hover:scale-105"
-          }`}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
+          {/* Error */}
+          {error && (
+            <p className="text-red-600 mt-3 mb-1 text-center font-medium">
+              {error}
+            </p>
+          )}
 
-        <p className="text-gray-400 mt-6 text-center">
-          Don't have an account?{" "}
+          {/* Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-black text-white py-3 font-semibold tracking-wider rounded-b-xl hover:bg-gray-800 transition"
+          >
+            {loading ? "Signing in..." : "SIGN IN"}
+          </button>
+
+        </form>
+
+        {/* Bottom link */}
+        <p className="text-center mt-5 text-gray-800">
+          Don’t have an account?{" "}
           <span
             onClick={() => router.push("/register")}
-            className="text-pink-400 hover:underline cursor-pointer font-semibold"
+            className="text-blue-600 cursor-pointer font-semibold hover:underline"
           >
             Register
           </span>
         </p>
-      </form>
+      </div>
     </div>
   );
 }

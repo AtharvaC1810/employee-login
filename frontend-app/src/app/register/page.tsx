@@ -6,14 +6,19 @@ import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -31,8 +36,9 @@ export default function RegisterPage() {
 
       if (!payload.email) throw new Error("Email is required");
 
-      const res = await apiRequest("/register", "POST", payload);
-      setSuccess("Registration successful! Redirecting to login...");
+      await apiRequest("/register", "POST", payload);
+
+      setSuccess("Registration successful! Redirecting...");
       setTimeout(() => router.push("/login"), 1500);
     } catch (err: any) {
       setError(err.message || "Registration failed");
@@ -42,73 +48,70 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-4">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-600">
       <form
         onSubmit={handleRegister}
-        className="bg-gray-900 bg-opacity-90 backdrop-blur-md p-10 rounded-3xl shadow-2xl w-1/2 max-w-md transition-transform transform hover:scale-105"
+        className="bg-white p-0 rounded-2xl shadow-xl w-full max-w-xl"
       >
-        <h2 className="text-3xl font-extrabold text-white mb-8 text-center tracking-wide">
-          Create Account
+        <h2 className="text-center text-3xl font-semibold py-10 tracking-wide">
+          CREATE ACCOUNT
         </h2>
 
         {error && (
-          <p className="bg-red-700 bg-opacity-60 text-red-100 py-2 px-4 rounded text-center mb-4 animate-pulse">
-            {error}
-          </p>
+          <p className="text-center text-red-600 mb-4">{error}</p>
         )}
         {success && (
-          <p className="bg-green-700 bg-opacity-60 text-green-100 py-2 px-4 rounded text-center mb-4 animate-pulse">
-            {success}
-          </p>
+          <p className="text-center text-green-600 mb-4">{success}</p>
         )}
 
-        <input
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-          className="w-full mb-4 px-5 py-3 rounded-2xl bg-gray-800 text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-500 transition"
-        />
+        {/* Top White Box for Inputs */}
+        <div className="bg-white rounded-t-2xl border border-gray-300 p-6 space-y-4">
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          value={form.email}
-          onChange={handleChange}
-          required
-          className="w-full mb-4 px-5 py-3 rounded-2xl bg-gray-800 text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-500 transition"
-        />
+          <input
+            type="text"
+            name="name"
+            placeholder="Full Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none"
+          />
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          required
-          className="w-full mb-6 px-5 py-3 rounded-2xl bg-gray-800 text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500 transition"
-        />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            value={form.email}
+            onChange={handleChange}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none"
+          />
 
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none"
+          />
+        </div>
+
+        {/* Black Register Bar */}
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-3 rounded-2xl text-white font-bold text-lg transition ${
-            loading
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-gradient-to-r from-purple-600 via-pink-500 to-red-500 hover:scale-105"
-          }`}
+          className="w-full bg-black text-white py-4 font-bold text-lg rounded-b-2xl"
         >
-          {loading ? "Registering..." : "Register"}
+          {loading ? "Registering..." : "REGISTER"}
         </button>
 
-        <p className="text-gray-400 mt-6 text-center">
+        <p className="text-center text-gray-700 py-6">
           Already have an account?{" "}
           <span
+            className="text-blue-600 cursor-pointer font-semibold hover:underline"
             onClick={() => router.push("/login")}
-            className="text-pink-400 hover:underline cursor-pointer font-semibold"
           >
             Login
           </span>
