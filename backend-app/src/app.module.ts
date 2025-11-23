@@ -1,25 +1,46 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { User } from './users/user.entity';
 
 @Module({
   imports: [
+    // Load .env globally
     ConfigModule.forRoot({
-      isGlobal: true,  
+      isGlobal: true,
     }),
+
+    // Configure TypeORM asynchronously using ConfigService
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
-        type: 'postgres',
-        host: process.env.DB_HOST,
-        port: Number(process.env.DB_PORT),
-        username: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        synchronize: true, 
-        autoLoadEntities: true,
-      }),
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const host = configService.get<string>('DB_HOST');
+        const port = Number(configService.get<number>('DB_PORT') || 5432);
+        const username = configService.get<string>('DB_USERNAME');
+        const password = configService.get<string>('DB_PASSWORD');
+        const database = configService.get<string>('DB_NAME');
+
+        if (!host || !port || !username || !password || !database) {
+          throw new Error('Database configuration is missing in .env or environment variables');
+        }
+
+        return {
+          type: 'postgres',
+          host,
+          port,
+          username,
+          password,
+          database,
+          entities: [User],
+          synchronize: true, // for development; disable in production
+        };
+      },
     }),
+
+    UsersModule,
     AuthModule,
   ],
 })
