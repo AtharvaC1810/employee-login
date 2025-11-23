@@ -52,26 +52,27 @@ export default function LoginPage() {
 
           {/* Inputs */}
           <div className="flex w-full border border-gray-300 rounded-t-xl overflow-hidden">
-            <input
-              type="email"
-              name="email"
-              placeholder="User name"
-              value={form.email}
-              onChange={handleChange}
-              required
-              className="w-1/2 px-4 py-3 outline-none border-r border-gray-300"
-            />
+  <input
+    type="email"
+    name="email"
+    placeholder="User name"
+    value={form.email}
+    onChange={handleChange}
+    required
+    className="w-1/2 px-4 py-3 outline-none border-r border-gray-300 text-black placeholder-gray-500 bg-white dark:text-black dark:bg-white"
+  />
 
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="w-1/2 px-4 py-3 outline-none"
-            />
-          </div>
+  <input
+    type="password"
+    name="password"
+    placeholder="Password"
+    value={form.password}
+    onChange={handleChange}
+    required
+    className="w-1/2 px-4 py-3 outline-none text-black placeholder-gray-500 bg-white dark:text-black dark:bg-white"
+  />
+</div>
+
 
           {/* Error */}
           {error && (
