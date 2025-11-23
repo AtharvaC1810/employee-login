@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL + "/auth";
+const API_URL = "https://employee-login-fs5m.onrender.com/auth";
 
 export async function apiRequest(endpoint: string, method = "POST", body?: any) {
   const url = endpoint.startsWith("/") ? `${API_URL}${endpoint}` : `${API_URL}/${endpoint}`;
