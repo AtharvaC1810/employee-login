@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/auth"; // Backend URL
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL + "/auth";
 
 export async function apiRequest(endpoint: string, method = "POST", body?: any) {
   const url = endpoint.startsWith("/") ? `${API_URL}${endpoint}` : `${API_URL}/${endpoint}`;
@@ -15,7 +15,6 @@ export async function apiRequest(endpoint: string, method = "POST", body?: any) 
     const data = await res.json();
 
     if (!res.ok) {
-      // Throw error with backend message
       throw new Error(data.message || "API request failed");
     }
 
