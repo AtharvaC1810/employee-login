@@ -6,17 +6,21 @@ export async function apiRequest(endpoint: string, method = "POST", body?: any) 
   try {
     const res = await fetch(url, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await res.json();
+    const text = await res.text(); 
+    if (!text) throw new Error("Empty response from backend");
 
-    if (!res.ok) {
-      throw new Error(data.message || "API request failed");
+    let data;
+    try {
+      data = JSON.parse(text); 
+    } catch {
+      throw new Error("Invalid JSON response from backend");
     }
+
+    if (!res.ok) throw new Error(data?.message || "API request failed");
 
     return data;
   } catch (err: any) {
