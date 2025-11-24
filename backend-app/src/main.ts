@@ -11,7 +11,7 @@ async function bootstrap() {
   "http://localhost:4000",
   "http://localhost:4001",
   "http://localhost:4002",
-  "https://vercel.com/atharva-chaudharis-projects-6d5d61e3/employee-login/AtF2syiL9Lt9yBe7pEx8Vrv8vcco"
+  "https://employee-login-two.vercel.app/register"
 ];
  
   app.enableCors({
