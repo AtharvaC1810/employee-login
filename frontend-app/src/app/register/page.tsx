@@ -36,7 +36,7 @@ export default function RegisterPage() {
       if (!payload.email) throw new Error("Email is required");
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
