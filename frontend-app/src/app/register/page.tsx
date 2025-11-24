@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { apiRequest } from "../../utils/api";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -36,7 +35,26 @@ export default function RegisterPage() {
 
       if (!payload.email) throw new Error("Email is required");
 
-      await apiRequest("/register", "POST", payload);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      // Safely parse JSON
+      let data: any;
+      try {
+        data = await res.json();
+      } catch (err) {
+        data = {};
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
 
       setSuccess("Registration successful! Redirecting...");
       setTimeout(() => router.push("/login"), 1500);
@@ -57,16 +75,11 @@ export default function RegisterPage() {
           CREATE ACCOUNT
         </h2>
 
-        {error && (
-          <p className="text-center text-red-600 mb-4">{error}</p>
-        )}
-        {success && (
-          <p className="text-center text-green-600 mb-4">{success}</p>
-        )}
+        {error && <p className="text-center text-red-600 mb-4">{error}</p>}
+        {success && <p className="text-center text-green-600 mb-4">{success}</p>}
 
         {/* Top White Box for Inputs */}
         <div className="bg-white rounded-t-2xl border border-gray-300 p-6 space-y-4">
-
           <input
             type="text"
             name="name"
