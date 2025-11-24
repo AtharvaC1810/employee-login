@@ -76,7 +76,7 @@ export default function RegisterPage() {
         onSubmit={handleRegister}
         className="bg-white p-0 rounded-2xl shadow-xl w-full max-w-xl"
       >
-        <h2 className="text-center text-3xl font-semibold py-10 tracking-wide">
+        <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 tracking-wide">
           CREATE ACCOUNT
         </h2>
 
