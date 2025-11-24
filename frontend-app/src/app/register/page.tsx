@@ -35,16 +35,21 @@ export default function RegisterPage() {
 
       if (!payload.email) throw new Error("Email is required");
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      // Strong password validation
+      const strongPasswordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+      if (!strongPasswordRegex.test(payload.password)) {
+        throw new Error(
+          "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+        );
+      }
 
-      // Safely parse JSON
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
       let data: any;
       try {
         data = await res.json();

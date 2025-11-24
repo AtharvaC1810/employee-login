@@ -21,16 +21,16 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',
   });
 
-  app.useGlobalPipes(
+   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: true,            
+      forbidNonWhitelisted: true, 
+      transform: true,           
     }),
   );
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-
-  console.log('Backend running');
+  console.log(`Backend running on port ${port}`);
 }
 bootstrap();
