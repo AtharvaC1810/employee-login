@@ -20,34 +20,25 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        }
-      );
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-      // Safely parse JSON
-      let data: any;
-      try {
-        data = await res.json();
-      } catch (err) {
-        data = {};
-      }
+      const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
+      if (!res.ok) throw new Error(data.message || "Login failed");
 
+      const user = data.data?.user || data.user; // Make sure backend sends user object
       const token = data.data?.access_token || data.access_token;
 
-      if (!token) {
-        throw new Error("No token received from server");
-      }
+      if (!token || !user) throw new Error("Invalid login response");
 
+      // Store user object and token in localStorage
+      localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", token);
+
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
@@ -72,7 +63,7 @@ export default function LoginPage() {
               value={form.email}
               onChange={handleChange}
               required
-              className="w-1/2 px-4 py-3 outline-none border-r border-gray-300 text-black placeholder-gray-500 bg-white dark:text-black dark:bg-white"
+              className="w-1/2 px-4 py-3 outline-none border-r border-gray-300 text-black placeholder-gray-500 bg-white"
             />
 
             <input
@@ -82,14 +73,12 @@ export default function LoginPage() {
               value={form.password}
               onChange={handleChange}
               required
-              className="w-1/2 px-4 py-3 outline-none text-black placeholder-gray-500 bg-white dark:text-black dark:bg-white"
+              className="w-1/2 px-4 py-3 outline-none text-black placeholder-gray-500 bg-white"
             />
           </div>
 
           {error && (
-            <p className="text-red-600 mt-3 mb-1 text-center font-medium">
-              {error}
-            </p>
+            <p className="text-red-600 mt-3 mb-1 text-center font-medium">{error}</p>
           )}
 
           <button
@@ -101,7 +90,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center mt-5 text-gray-800">
+        <p className="text-center mt-5 text-gray-700">
           Don’t have an account?{" "}
           <span
             onClick={() => router.push("/register")}

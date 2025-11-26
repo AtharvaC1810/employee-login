@@ -61,8 +61,28 @@ export default function RegisterPage() {
         throw new Error(data.message || "Registration failed");
       }
 
+      // Support both backend response formats
+      const token =
+        data.data?.access_token ||
+        data.access_token ||
+        null;
+
+      const user =
+        data.data?.user ||
+        data.user ||
+        null;
+
+      if (!token) throw new Error("No token received from server");
+      if (!user) throw new Error("No user data received from server");
+
+      // Save token + user to localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
       setSuccess("Registration successful! Redirecting...");
-      setTimeout(() => router.push("/login"), 1500);
+      
+      // Redirect after short delay
+      setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {
@@ -71,7 +91,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-600">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-600 px-4">
       <form
         onSubmit={handleRegister}
         className="bg-white p-0 rounded-2xl shadow-xl w-full max-w-xl"
@@ -92,7 +112,7 @@ export default function RegisterPage() {
             value={form.name}
             onChange={handleChange}
             required
-            className="w-1/2 px-4 py-3 outline-none border-r border-gray-300 text-black placeholder-gray-500 bg-white dark:text-black dark:bg-white"
+            className="w-full px-4 py-3 outline-none border-b border-gray-300 text-black placeholder-gray-500 bg-white"
           />
 
           <input
@@ -102,7 +122,7 @@ export default function RegisterPage() {
             value={form.email}
             onChange={handleChange}
             required
-            className="w-1/2 px-4 py-3 outline-none border-r border-gray-300 text-black placeholder-gray-500 bg-white dark:text-black dark:bg-white"
+            className="w-full px-4 py-3 outline-none border-b border-gray-300 text-black placeholder-gray-500 bg-white"
           />
 
           <input
@@ -112,7 +132,7 @@ export default function RegisterPage() {
             value={form.password}
             onChange={handleChange}
             required
-            className="w-1/2 px-4 py-3 outline-none text-black placeholder-gray-500 bg-white dark:text-black dark:bg-white"
+            className="w-full px-4 py-3 outline-none text-black placeholder-gray-500 bg-white"
           />
         </div>
 
@@ -120,7 +140,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-4 font-bold text-lg rounded-b-2xl"
+          className="w-full bg-black text-white py-4 font-bold text-lg rounded-b-2xl hover:bg-gray-800 transition"
         >
           {loading ? "Registering..." : "REGISTER"}
         </button>
