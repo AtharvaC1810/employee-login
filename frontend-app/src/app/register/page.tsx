@@ -37,49 +37,72 @@ export default function RegisterPage() {
 
       const strongPasswordRegex =
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
       if (!strongPasswordRegex.test(payload.password)) {
         throw new Error(
           "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
         );
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
+      // Try to parse JSON safely
       let data: any;
       try {
         data = await res.json();
-      } catch (err) {
+      } catch (parseErr) {
         data = {};
       }
+
+      console.log("REGISTER RESPONSE:", data);
 
       if (!res.ok) {
         throw new Error(data.message || "Registration failed");
       }
 
+      // Extract token from multiple possible backend formats
       const token =
-        data.data?.access_token ||
-        data.access_token ||
+        data?.token ||
+        data?.access_token ||
+        data?.authToken ||
+        data?.jwt ||
+        data?.data?.token ||
+        data?.data?.access_token ||
         null;
 
+      // Extract user
       const user =
-        data.data?.user ||
-        data.user ||
+        data?.user ||
+        data?.data?.user ||
+        data?.profile ||
         null;
 
-      if (!token) throw new Error("No token received from server");
-      if (!user) throw new Error("No user data received from server");
+      if (!token) {
+        console.error("Token missing in API response:", data);
+        throw new Error("No token received from server");
+      }
 
+      if (!user) {
+        console.error("User missing in API response:", data);
+        throw new Error("No user data received from server");
+      }
+
+      // Save to localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
       setSuccess("Registration successful! Redirecting...");
-      
+
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: any) {
+      console.error("REGISTER ERROR:", err);
       setError(err.message || "Registration failed");
     } finally {
       setLoading(false);
@@ -99,7 +122,7 @@ export default function RegisterPage() {
         {error && <p className="text-center text-red-600 mb-4">{error}</p>}
         {success && <p className="text-center text-green-600 mb-4">{success}</p>}
 
-        {/* Top White Box for Inputs */}
+        {/* Inputs */}
         <div className="bg-white rounded-t-2xl border border-gray-300 p-6 space-y-4">
           <input
             type="text"
@@ -132,7 +155,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* Black Register Bar */}
+        {/* Register Button */}
         <button
           type="submit"
           disabled={loading}
