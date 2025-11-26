@@ -15,11 +15,24 @@ export default function PermissionsPage() {
   const [loading, setLoading] = useState(true);
   const [newPerm, setNewPerm] = useState({ name: "", description: "" });
   const [error, setError] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<string>("");
 
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+    if (!storedToken || !userData) {
+      router.push("/login");
+      return;
+    }
+    setToken(storedToken);
+    const user = JSON.parse(userData);
+    setRole(user.role?.toUpperCase() || "");
+  }, [router]);
 
-  // Fetch permissions
+  // Fetch permissions from API
   const fetchPermissions = async () => {
+    if (!token) return;
     try {
       setLoading(true);
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions`, {
@@ -37,10 +50,11 @@ export default function PermissionsPage() {
 
   useEffect(() => {
     fetchPermissions();
-  }, []);
+  }, [token]);
 
   // Add new permission
   const handleAdd = async () => {
+    if (!token) return;
     try {
       if (!newPerm.name) throw new Error("Name is required");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions`, {
@@ -59,8 +73,8 @@ export default function PermissionsPage() {
     }
   };
 
-  // Delete permission
   const handleDelete = async (id: number) => {
+    if (!token) return;
     if (!confirm("Are you sure you want to delete this permission?")) return;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions/${id}`, {
@@ -74,8 +88,12 @@ export default function PermissionsPage() {
     }
   };
 
+  if (role && role !== "ADMIN") {
+    return <div className="text-center mt-10 text-white">Access Denied</div>;
+  }
+
   return (
-    <div className="p-10">
+    <div className="p-10 bg-gray-900 min-h-screen text-white">
       <h1 className="text-3xl font-bold mb-5">Permissions Management</h1>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
