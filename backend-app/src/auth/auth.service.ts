@@ -1,13 +1,15 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-
 import { User } from '../users/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UserRole } from '../users/user-role.enum';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+
+
 
 @Injectable()
 export class AuthService {
@@ -108,4 +110,23 @@ async register(dto: RegisterDto) {
     },
   };
 }
+
+async updateProfile(userId: number, dto: UpdateProfileDto) {
+  const user = await this.userRepository.findOne({ where: { id: userId } });
+
+  if (!user) throw new NotFoundException('User not found');
+
+  if (dto.email) user.email = dto.email;
+  if (dto.name) user.name = dto.name;
+
+  if (dto.password) {
+    const hashed = await bcrypt.hash(dto.password, 10);
+    user.password = hashed;
+  }
+
+  await this.userRepository.save(user);
+
+  return { message: 'Profile updated successfully' };
+}
+
 }
