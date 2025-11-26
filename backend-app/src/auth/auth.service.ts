@@ -19,13 +19,9 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) {}
 
-  // --------------------------
-  // REGISTER USER
-  // --------------------------
 async register(dto: RegisterDto) {
   console.log("[AuthService] Registering user:", dto.email);
 
-  // Ensure email is a string
   const email = typeof dto.email === "string" ? dto.email.trim() : "";
 
   if (!email) {
@@ -33,7 +29,6 @@ async register(dto: RegisterDto) {
   }
 
   const existing = await this.userRepository.findOne({ where: { email } });
-
   if (existing) {
     console.log("[AuthService] Duplicate email found:", existing.email);
     throw new BadRequestException("Email already in use");
@@ -50,14 +45,17 @@ async register(dto: RegisterDto) {
 
   await this.userRepository.save(user);
 
+  const payload = { sub: user.id, email: user.email, role: user.role };
+  const access_token = this.jwtService.sign(payload);
+
   const { password, ...safeUser } = user;
-  return safeUser;
+
+  return {
+    access_token, // <-- REQUIRED by frontend
+    user: safeUser,
+  };
 }
 
-
-  // --------------------------
-  // VALIDATE USER (EMAIL + PASSWORD)
-  // --------------------------
   async validateUser(email: string, password: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) return null;
@@ -69,9 +67,6 @@ async register(dto: RegisterDto) {
     return safeUser;
   }
 
-  // --------------------------
-  // LOGIN USER
-  // --------------------------
   async login(dto: LoginDto) {
   // Ensure email and password are strings
   const email = typeof dto.email === 'string' ? dto.email.trim() : '';
@@ -81,27 +76,23 @@ async register(dto: RegisterDto) {
     throw new BadRequestException('Email and password are required');
   }
 
-  // Find the user
   const user = await this.userRepository.findOne({ where: { email } });
   if (!user) {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  // Verify password
   const passwordValid = await bcrypt.compare(password, user.password);
   if (!passwordValid) {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  // Generate JWT
   const payload = { sub: user.id, email: user.email, role: user.role };
   const access_token = this.jwtService.sign(payload);
 
   console.log('[AuthService] Login successful for user:', user.email);
 
-  // Return standard login response
   return {
-    access_token,          // <-- frontend should use this
+    access_token,          
     user: {
       id: user.id,
       name: user.name,
