@@ -80,7 +80,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-extrabold text-white mb-8">
-          Hello {username} 👋
+          Hello {username} 
         </h1>
 
         <p className="text-gray-300 mb-10 text-lg">
