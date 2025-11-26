@@ -34,7 +34,7 @@ import { PermissionsModule } from './permissions/permissions.module';
           username,
           password,
           database,
-          entities: [User],
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: true, 
         };
       },
