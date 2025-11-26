@@ -30,12 +30,11 @@ export default function LoginPage() {
 
       if (!res.ok) throw new Error(data.message || "Login failed");
 
-      const user = data.data?.user || data.user; // Make sure backend sends user object
+      const user = data.data?.user || data.user; 
       const token = data.data?.access_token || data.access_token;
 
       if (!token || !user) throw new Error("Invalid login response");
 
-      // Store user object and token in localStorage
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", token);
 

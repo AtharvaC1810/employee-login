@@ -35,7 +35,6 @@ export default function RegisterPage() {
 
       if (!payload.email) throw new Error("Email is required");
 
-      // Strong password validation
       const strongPasswordRegex =
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
       if (!strongPasswordRegex.test(payload.password)) {
@@ -61,7 +60,6 @@ export default function RegisterPage() {
         throw new Error(data.message || "Registration failed");
       }
 
-      // Support both backend response formats
       const token =
         data.data?.access_token ||
         data.access_token ||
@@ -75,13 +73,11 @@ export default function RegisterPage() {
       if (!token) throw new Error("No token received from server");
       if (!user) throw new Error("No user data received from server");
 
-      // Save token + user to localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
       setSuccess("Registration successful! Redirecting...");
       
-      // Redirect after short delay
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: any) {
       setError(err.message || "Registration failed");

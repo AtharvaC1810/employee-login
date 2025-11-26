@@ -44,7 +44,6 @@ export default function EditProfile() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // update local storage
       localStorage.setItem(
         "user",
         JSON.stringify({ name: form.name, email: form.email })

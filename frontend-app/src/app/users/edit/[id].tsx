@@ -20,13 +20,11 @@ export default function EditUserPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Load current user from localStorage
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) setCurrentUser(JSON.parse(userData));
   }, []);
 
-  // Fetch the user to edit
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -43,7 +41,7 @@ export default function EditUserPage() {
         setForm({
           name: data.name,
           email: data.email,
-          password: "", // leave blank
+          password: "", 
           role: data.role,
         });
       } catch (err: any) {
@@ -68,11 +66,9 @@ export default function EditUserPage() {
     try {
       const token = localStorage.getItem("token");
 
-      // Remove password if blank
       const payload = { ...form };
       if (!payload.password) delete payload.password;
 
-      // Non-admins cannot change role
       if (currentUser?.role !== "ADMIN") {
         delete payload.role;
       }
@@ -88,7 +84,6 @@ export default function EditUserPage() {
 
       if (!res.ok) throw new Error("Failed to update user");
 
-      // Update localStorage if current user edited self
       if (currentUser?.id === Number(userId)) {
         localStorage.setItem("user", JSON.stringify({ ...currentUser, ...payload }));
       }
