@@ -16,30 +16,42 @@ export default function PermissionsPage() {
   const [newPerm, setNewPerm] = useState({ name: "", description: "" });
   const [error, setError] = useState("");
   const [token, setToken] = useState<string | null>(null);
-  const [role, setRole] = useState<string>("");
+  const [role, setRole] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false); // ensures code runs only on client
 
+  // Run only on client
   useEffect(() => {
+    setIsClient(true);
+
     const storedToken = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
+
     if (!storedToken || !userData) {
       router.push("/login");
       return;
     }
+
     setToken(storedToken);
     const user = JSON.parse(userData);
     setRole(user.role?.toUpperCase() || "");
   }, [router]);
 
-  // Fetch permissions from API
+  // Fetch permissions
   const fetchPermissions = async () => {
     if (!token) return;
+
     try {
       setLoading(true);
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to fetch permissions");
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to fetch permissions");
+      }
+
+      const data: Permission[] = await res.json();
       setPermissions(data);
     } catch (err: any) {
       setError(err.message);
@@ -49,14 +61,18 @@ export default function PermissionsPage() {
   };
 
   useEffect(() => {
-    fetchPermissions();
+    if (token) fetchPermissions();
   }, [token]);
 
   // Add new permission
   const handleAdd = async () => {
     if (!token) return;
+    if (!newPerm.name) {
+      setError("Permission name is required");
+      return;
+    }
+
     try {
-      if (!newPerm.name) throw new Error("Name is required");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions`, {
         method: "POST",
         headers: {
@@ -65,7 +81,12 @@ export default function PermissionsPage() {
         },
         body: JSON.stringify(newPerm),
       });
-      if (!res.ok) throw new Error("Failed to create permission");
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to create permission");
+      }
+
       setNewPerm({ name: "", description: "" });
       fetchPermissions();
     } catch (err: any) {
@@ -73,23 +94,36 @@ export default function PermissionsPage() {
     }
   };
 
+  // Delete permission
   const handleDelete = async (id: number) => {
     if (!token) return;
     if (!confirm("Are you sure you want to delete this permission?")) return;
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to delete permission");
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to delete permission");
+      }
+
       fetchPermissions();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
+  if (!isClient) return null; // prevent SSR errors
+
   if (role && role !== "ADMIN") {
-    return <div className="text-center mt-10 text-white">Access Denied</div>;
+    return (
+      <div className="text-center mt-10 text-white text-xl font-semibold">
+        Access Denied
+      </div>
+    );
   }
 
   return (
@@ -126,23 +160,29 @@ export default function PermissionsPage() {
         <p>Loading...</p>
       ) : (
         <div className="bg-gray-800 text-white p-5 rounded-xl shadow-xl space-y-2">
-          {permissions.map((perm) => (
-            <div
-              key={perm.id}
-              className="border-b border-gray-700 py-2 flex justify-between items-center"
-            >
-              <div>
-                <p className="font-semibold">{perm.name}</p>
-                <p className="text-gray-400 text-sm">{perm.description || "No description"}</p>
-              </div>
-              <button
-                onClick={() => handleDelete(perm.id)}
-                className="bg-red-600 px-3 py-1 rounded hover:bg-red-700"
+          {permissions.length === 0 ? (
+            <p className="text-gray-400 text-center">No permissions found</p>
+          ) : (
+            permissions.map((perm) => (
+              <div
+                key={perm.id}
+                className="border-b border-gray-700 py-2 flex justify-between items-center"
               >
-                Delete
-              </button>
-            </div>
-          ))}
+                <div>
+                  <p className="font-semibold">{perm.name}</p>
+                  <p className="text-gray-400 text-sm">
+                    {perm.description || "No description"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDelete(perm.id)}
+                  className="bg-red-600 px-3 py-1 rounded hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

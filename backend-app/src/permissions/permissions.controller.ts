@@ -8,35 +8,38 @@ import { UserRole } from '../users/user-role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('permissions')
 export class PermissionsController {
-  constructor(private permService: PermissionsService) {}
+  constructor(private readonly permService: PermissionsService) {}
 
   @Get()
   @Roles(UserRole.ADMIN)
-  findAll() {
-    return this.permService.findAll();
+  async findAll() {
+    return await this.permService.findAll();
   }
 
   @Get(':id')
   @Roles(UserRole.ADMIN)
-  findOne(@Param('id') id: string) {
-    return this.permService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return await this.permService.findOne(+id);
   }
 
   @Post()
   @Roles(UserRole.ADMIN)
-  create(@Body() body: { name: string; description?: string }) {
-    return this.permService.create(body.name, body.description);
+  async create(@Body() body: { name: string; description?: string }) {
+    return await this.permService.create(body.name, body.description);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() body: { name: string; description?: string }) {
-    return this.permService.update(+id, body.name, body.description);
+  async update(
+    @Param('id') id: string,
+    @Body() body: { name: string; description?: string },
+  ) {
+    return await this.permService.update(+id, body.name, body.description);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.permService.remove(+id);
+  async remove(@Param('id') id: string) {
+    return await this.permService.remove(+id);
   }
 }
