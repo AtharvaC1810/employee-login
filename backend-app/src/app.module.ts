@@ -4,15 +4,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { User } from './users/user.entity';
+import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
   imports: [
-    // Load .env globally
+  
     ConfigModule.forRoot({
       isGlobal: true,
     }),
 
-    // Configure TypeORM asynchronously using ConfigService
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,13 +35,14 @@ import { User } from './users/user.entity';
           password,
           database,
           entities: [User],
-          synchronize: true, // for development; disable in production
+          synchronize: true, 
         };
       },
     }),
 
     UsersModule,
     AuthModule,
+    PermissionsModule,
   ],
 })
 export class AppModule {}
