@@ -51,42 +51,6 @@ export default function DashboardPage() {
   };
 
   // -----------------------------
-  // SIDEBAR LINKS
-  // -----------------------------
-  const sidebarLinks = [
-    {
-      label: "Dashboard",
-      icon: <LayoutDashboard size={20} />,
-      path: "/dashboard",
-      visible: true,
-    },
-    {
-      label: "Profile",
-      icon: <UserIcon size={20} />,
-      path: "/profile",
-      visible: true,
-    },
-    {
-      label: "Users",
-      icon: <UsersIcon size={20} />,
-      path: "/users",
-      visible: role === "ADMIN",
-    },
-    {
-      label: "Roles",
-      icon: <RoleIcon size={20} />,
-      path: "/roles",
-      visible: role === "ADMIN",
-    },
-    {
-      label: "Permissions",
-      icon: <PermissionIcon size={20} />,
-      path: "/permissions",
-      visible: role === "ADMIN",
-    },
-  ];
-
-  // -----------------------------
   // DASHBOARD CARDS
   // -----------------------------
   const cards = [
