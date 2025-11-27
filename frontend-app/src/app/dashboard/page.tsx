@@ -51,6 +51,42 @@ export default function DashboardPage() {
   };
 
   // -----------------------------
+  // SIDEBAR LINKS
+  // -----------------------------
+  const sidebarLinks = [
+    {
+      label: "Dashboard",
+      icon: <LayoutDashboard size={20} />,
+      path: "/dashboard",
+      visible: true,
+    },
+    {
+      label: "Profile",
+      icon: <UserIcon size={20} />,
+      path: "/profile",
+      visible: true,
+    },
+    {
+      label: "Users",
+      icon: <UsersIcon size={20} />,
+      path: "/users",
+      visible: role === "ADMIN",
+    },
+    {
+      label: "Roles",
+      icon: <RoleIcon size={20} />,
+      path: "/roles",
+      visible: role === "ADMIN",
+    },
+    {
+      label: "Permissions",
+      icon: <PermissionIcon size={20} />,
+      path: "/permissions",
+      visible: role === "ADMIN",
+    },
+  ];
+
+  // -----------------------------
   // DASHBOARD CARDS
   // -----------------------------
   const cards = [
@@ -88,7 +124,7 @@ export default function DashboardPage() {
     },
     {
       title: "Logout",
-      desc: "Sign out of your account",
+      desc: "Sign out",
       icon: <LogoutIcon size={32} />,
       action: logout,
       visible: true,
@@ -96,49 +132,13 @@ export default function DashboardPage() {
     },
   ];
 
-  // -----------------------------
-  // SIDEBAR LINKS
-  // -----------------------------
-  const sidebarLinks = [
-    {
-      label: "Dashboard",
-      icon: <LayoutDashboard size={20} />,
-      path: "/dashboard",
-      visible: true,
-    },
-    {
-      label: "Profile",
-      icon: <UserIcon size={20} />,
-      path: "/profile",
-      visible: true,
-    },
-    {
-      label: "Users",
-      icon: <UsersIcon size={20} />,
-      path: "/users",
-      visible: role === "ADMIN",
-    },
-    {
-      label: "Roles",
-      icon: <RoleIcon size={20} />,
-      path: "/roles",
-      visible: role === "ADMIN",
-    },
-    {
-      label: "Permissions",
-      icon: <PermissionIcon size={20} />,
-      path: "/permissions",
-      visible: role === "ADMIN",
-    },
-  ];
-
   return (
     <div className="flex min-h-screen bg-gray-100">
 
       {/* ---------------------------------------------------------------- */}
-      {/* SIDEBAR — ONLY ONE SIDEBAR NOW */}
+      {/* MAIN BLACK SIDEBAR (only sidebar) */}
       {/* ---------------------------------------------------------------- */}
-      <aside className="w-64 bg-white border-r shadow-md p-6 fixed h-full">
+      <aside className="w-64 bg-gray-900 text-white p-6 fixed h-full shadow-lg">
         <h1 className="text-2xl font-bold mb-8">Admin Panel</h1>
 
         <nav className="flex flex-col gap-4">
@@ -148,13 +148,12 @@ export default function DashboardPage() {
               <button
                 key={idx}
                 onClick={() => router.push(item.path)}
-                className="flex items-center gap-3 px-4 py-2 rounded-lg text-left hover:bg-gray-200 transition"
+                className="flex items-center gap-3 px-4 py-2 rounded-lg text-left bg-gray-800 hover:bg-gray-700 transition"
               >
                 {item.icon}
                 <span className="font-medium">{item.label}</span>
               </button>
             ))}
-
         </nav>
       </aside>
 
