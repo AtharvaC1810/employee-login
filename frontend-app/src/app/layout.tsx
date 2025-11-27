@@ -1,14 +1,13 @@
-import './globals.css';
+import Sidebar from "@/components/Sidebar";
 
-export const metadata = {
-  title: 'My App',
-  description: 'Next.js + Tailwind App',
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <div className="flex">
+      <Sidebar />
+
+      <main className="ml-64 w-full p-6 bg-gray-900 min-h-screen text-white">
+        {children}
+      </main>
+    </div>
   );
 }
