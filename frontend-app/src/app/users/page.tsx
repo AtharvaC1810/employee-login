@@ -395,10 +395,10 @@ function UsersContent() {
                   key={u.id}
                   className="border-gray-700 hover:bg-gray-700/40"
                 >
-                  <TableCell>{u.id}</TableCell>
-                  <TableCell>{u.name}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>{u.role}</TableCell>
+                  <TableCell className="text-white">{u.id}</TableCell>
+                  <TableCell className="text-white">{u.name}</TableCell>
+                  <TableCell className="text-white">{u.email}</TableCell>
+                  <TableCell className="text-white">{u.role}</TableCell>
                   <TableCell className="flex justify-center gap-2">
                     <Button
                       size="sm"
@@ -435,7 +435,7 @@ function UsersContent() {
           <div className="flex justify-between items-center mt-6">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300"
+              className="border-gray-600 text-gray-900"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
             >
@@ -448,7 +448,7 @@ function UsersContent() {
 
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300"
+              className="border-gray-600 text-gray-900"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
             >
