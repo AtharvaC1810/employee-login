@@ -107,16 +107,16 @@ export default function PermissionsPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Permissions</h1>
+    <div className="min-h-screen bg-gray-950 p-8 text-white">
+      <h1 className="text-3xl font-bold mb-6 text-white">Permissions</h1>
 
-      <Card className="mb-6 bg-gray-900 border-gray-700">
+      <Card className="mb-6 bg-gray-900 border border-gray-700">
         <CardContent className="p-4 flex gap-3">
           <Input
             placeholder="Permission Name"
             value={newPerm.name}
             onChange={(e) => setNewPerm({ ...newPerm, name: e.target.value })}
-            className="bg-gray-800 border-gray-700 text-white"
+            className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
           />
           <Input
             placeholder="Description"
@@ -124,36 +124,40 @@ export default function PermissionsPage() {
             onChange={(e) =>
               setNewPerm({ ...newPerm, description: e.target.value })
             }
-            className="bg-gray-800 border-gray-700 text-white"
+            className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
           />
-          <Button onClick={handleAdd}>Add</Button>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAdd}>
+            Add
+          </Button>
         </CardContent>
       </Card>
 
       {loading ? (
-        <p>Loading...</p>
+        <p className="text-white">Loading...</p>
       ) : (
         <Card className="bg-gray-900 border-gray-700">
           <CardContent className="p-4 space-y-3">
             {permissions.map((perm) => (
               <div
                 key={perm.id}
-                className="flex justify-between border-b border-gray-700 pb-2"
+                className="flex justify-between border-b border-gray-700 pb-2 text-white"
               >
                 <div>
-                  <p className="font-semibold">{perm.name}</p>
-                  <p className="text-gray-400 text-sm">
-                    {perm.description || "No description"}
-                  </p>
+                  <p className="font-semibold text-white">{perm.name}</p>
+                  <p className="text-gray-400 text-sm">{perm.description || "No description"}</p>
                 </div>
                 <Button
                   variant="destructive"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => handleDelete(perm.id)}
                 >
                   Delete
                 </Button>
               </div>
             ))}
+            {permissions.length === 0 && (
+              <p className="text-gray-400 text-center py-4">No permissions found.</p>
+            )}
           </CardContent>
         </Card>
       )}
