@@ -94,8 +94,8 @@ export default function RoleManagementPage() {
                 <TableBody>
                   {users.map(user => (
                     <TableRow key={user.id}>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="text-white">{user.name}</TableCell>
+                      <TableCell className="text-white">{user.email}</TableCell>
                       <TableCell>
                         <Select
                           defaultValue={user.role}
