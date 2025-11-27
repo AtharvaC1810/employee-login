@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../components/ProtectedRoute";
+import Sidebar from "../../components/Sidebar";
 
 // shadcn imports
 import {
@@ -13,7 +14,6 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,6 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-
 import Link from "next/link";
 
 // --------------------
@@ -51,6 +50,9 @@ interface UserForm {
   role: string;
 }
 
+// --------------------
+// MAIN PAGE
+// --------------------
 export default function UsersPage() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN", "ENGINEER", "INTERN"]}>
@@ -90,50 +92,68 @@ function UsersContent() {
   const [success, setSuccess] = useState("");
   const [creating, setCreating] = useState(false);
 
-  // LOAD CURRENT USER
+  // -----------------------------
+  // LOAD CURRENT USER + FETCH USERS
+  // -----------------------------
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) setCurrentUser(JSON.parse(stored));
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (!token || !storedUser) {
+      router.push("/login");
+      return;
+    }
+
+    const parsedUser: User = JSON.parse(storedUser);
+    setCurrentUser(parsedUser);
+
+    // fetch users immediately
+    fetchUsers(token, parsedUser);
   }, []);
 
-  // FETCH ALL USERS
-  const fetchUsers = async () => {
+  // -----------------------------
+  // FETCH USERS FUNCTION
+  // -----------------------------
+  const fetchUsers = async (token: string, user: User) => {
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
 
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
       if (!res.ok) throw new Error("Failed to load users");
+
       const data: User[] = await res.json();
 
-      let results = data;
-      if (currentUser?.role !== "ADMIN") {
-        results = data.filter((u) => u.id === currentUser?.id);
-      }
+      // Non-admin can only see their own record
+      const results =
+        user.role !== "ADMIN" ? data.filter((u) => u.id === user.id) : data;
 
       setUsers(results);
       setFilteredUsers(results);
     } catch (err) {
-      console.log("User load error:", err);
+      console.error("User load error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (currentUser) fetchUsers();
-  }, [currentUser]);
-
-  // SEARCH + SORT + FILTER
+  // -----------------------------
+  // SEARCH + SORT
+  // -----------------------------
   useEffect(() => {
     let updated = [...users];
 
     if (search.trim()) {
       updated = updated.filter((u) =>
-        `${u.name} ${u.email} ${u.role}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
+        `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -142,7 +162,6 @@ function UsersContent() {
     setCurrentPage(1);
   }, [search, sortOption, users]);
 
-  // SORT FUNCTION
   const sortUsers = (list: User[], opt: string) => {
     const sorted = [...list];
     switch (opt) {
@@ -168,14 +187,18 @@ function UsersContent() {
     return sorted;
   };
 
+  // -----------------------------
   // PAGINATION
+  // -----------------------------
   const totalPages = Math.ceil(filteredUsers.length / pageSize);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
+  // -----------------------------
   // CREATE USER
+  // -----------------------------
   const handleCreateUser = async (e: any) => {
     e.preventDefault();
     setError("");
@@ -193,6 +216,8 @@ function UsersContent() {
       }
 
       const token = localStorage.getItem("token");
+      if (!token) throw new Error("Unauthorized");
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
         method: "POST",
         headers: {
@@ -204,12 +229,12 @@ function UsersContent() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to create user");
       }
 
       setSuccess("User created successfully");
       setForm({ name: "", email: "", password: "", role: "INTERN" });
-      fetchUsers();
+      fetchUsers(token, currentUser!);
 
       setTimeout(() => setModalOpen(false), 1200);
     } catch (err: any) {
@@ -219,56 +244,45 @@ function UsersContent() {
     }
   };
 
+  // -----------------------------
   // DELETE USER
+  // -----------------------------
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure?")) return;
 
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${id}`, {
+      if (!token) throw new Error("Unauthorized");
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      if (!res.ok) throw new Error("Failed to delete user");
+
       setUsers(users.filter((u) => u.id !== id));
-    } catch {
+    } catch (err) {
       alert("Failed to delete user");
     }
   };
 
+  // -----------------------------
   // LOADING
+  // -----------------------------
   if (loading)
     return <p className="text-center text-white mt-10">Loading users...</p>;
 
+  // -----------------------------
+  // RENDER
+  // -----------------------------
   return (
     <div className="flex bg-gray-900 min-h-screen text-white">
-
       {/* ------------------ LEFT SIDEBAR ------------------ */}
-      <aside className="w-64 bg-gray-800 p-5 border-r border-gray-700">
-        <h2 className="text-xl font-bold mb-6">Dashboard Menu</h2>
-
-        <nav className="space-y-3">
-          <Link href="/dashboard" className="block p-2 rounded hover:bg-gray-700">
-            Dashboard
-          </Link>
-          <Link href="/users" className="block p-2 rounded bg-gray-700">
-            Users Management
-          </Link>
-          <Link href="/roles" className="block p-2 rounded hover:bg-gray-700">
-            Roles Management
-          </Link>
-          <Link href="/permissions" className="block p-2 rounded hover:bg-gray-700">
-            Permissions Management
-          </Link>
-          <Link href="/profile" className="block p-2 rounded hover:bg-gray-700">
-            Edit Profile
-          </Link>
-        </nav>
-      </aside>
+      <Sidebar />
 
       {/* ------------------ MAIN CONTENT ------------------ */}
-      <main className="flex-1 p-8">
-
+      <main className="flex-1 p-8 ml-64">
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Users Management</h1>
@@ -290,31 +304,22 @@ function UsersContent() {
                   <Input
                     placeholder="Full name"
                     value={form.name}
-                    onChange={(e) =>
-                      setForm({ ...form, name: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="bg-gray-800 border-gray-700"
                   />
-
                   <Input
                     placeholder="Email"
                     value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="bg-gray-800 border-gray-700"
                   />
-
                   <Input
                     placeholder="Password"
                     type="password"
                     value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="bg-gray-800 border-gray-700"
                   />
-
                   <Select
                     value={form.role}
                     onValueChange={(role) => setForm({ ...form, role })}
@@ -360,7 +365,6 @@ function UsersContent() {
             <SelectTrigger className="w-48 bg-gray-800 text-white">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
-
             <SelectContent className="bg-gray-800 text-white">
               <SelectItem value="id-asc">ID ↑</SelectItem>
               <SelectItem value="id-desc">ID ↓</SelectItem>
@@ -387,7 +391,10 @@ function UsersContent() {
 
             <TableBody>
               {paginatedUsers.map((u) => (
-                <TableRow key={u.id} className="border-gray-700 hover:bg-gray-700/40">
+                <TableRow
+                  key={u.id}
+                  className="border-gray-700 hover:bg-gray-700/40"
+                >
                   <TableCell>{u.id}</TableCell>
                   <TableCell>{u.name}</TableCell>
                   <TableCell>{u.email}</TableCell>
