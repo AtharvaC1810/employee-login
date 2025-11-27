@@ -135,27 +135,6 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-100">
 
-      {/* ---------------------------------------------------------------- */}
-      {/* MAIN BLACK SIDEBAR (only sidebar) */}
-      {/* ---------------------------------------------------------------- */}
-      <aside className="w-64 bg-gray-900 text-white p-6 fixed h-full shadow-lg">
-        <h1 className="text-2xl font-bold mb-8">Admin Panel</h1>
-
-        <nav className="flex flex-col gap-4">
-          {sidebarLinks
-            .filter((l) => l.visible)
-            .map((item, idx) => (
-              <button
-                key={idx}
-                onClick={() => router.push(item.path)}
-                className="flex items-center gap-3 px-4 py-2 rounded-lg text-left bg-gray-800 hover:bg-gray-700 transition"
-              >
-                {item.icon}
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
-        </nav>
-      </aside>
 
       {/* ---------------------------------------------------------------- */}
       {/* MAIN CONTENT */}
