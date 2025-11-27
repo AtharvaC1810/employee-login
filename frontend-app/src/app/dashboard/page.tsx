@@ -155,14 +155,6 @@ export default function DashboardPage() {
               </button>
             ))}
 
-          {/* LOGOUT — remains only in sidebar */}
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-200 text-red-600 mt-6 transition"
-          >
-            <LogoutIcon size={20} />
-            <span className="font-medium">Logout</span>
-          </button>
         </nav>
       </aside>
 
