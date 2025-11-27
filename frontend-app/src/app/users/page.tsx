@@ -282,7 +282,7 @@ function UsersContent() {
       <Sidebar />
 
       {/* ------------------ MAIN CONTENT ------------------ */}
-      <main className="flex-1 p-8 ml-64">
+      <main className="flex-1">
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Users Management</h1>

@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const showSidebar = !publicPages.includes(pathname);
 
   return (
-    <div className="flex-1 p-10 ml-0">
+    <div className="flex-1 ml-0">
       {showSidebar && <Sidebar />}
       <main className={`${showSidebar ? "ml-64" : ""} flex-1`}>{children}</main>
     </div>

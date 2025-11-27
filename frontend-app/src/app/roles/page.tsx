@@ -73,7 +73,7 @@ export default function RoleManagementPage() {
   return (
     <>
       <Sidebar />
-      <div className="ml-64 min-h-screen bg-gray-950 p-8 text-white">
+      <div className="min-h-screen bg-gray-950 p-8 text-white">
         <Card className="bg-gray-900 border border-gray-800">
           <CardHeader>
             <CardTitle className="text-white">Role Management</CardTitle>

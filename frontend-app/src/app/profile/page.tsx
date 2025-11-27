@@ -47,66 +47,6 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* ---------------- SIDEBAR ---------------- */}
-      <aside className="w-64 bg-white shadow-lg border-r hidden md:flex flex-col p-5">
-        <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
-          <LayoutDashboard size={26} /> Dashboard
-        </h2>
-
-        <nav className="flex flex-col gap-2">
-          <Button
-            variant="ghost"
-            className="justify-start"
-            onClick={() => router.push("/dashboard")}
-          >
-            <ChevronRight className="mr-2 h-4 w-4" /> Dashboard Home
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="justify-start"
-            onClick={() => router.push("/profile")}
-          >
-            <User className="mr-2 h-4 w-4" /> Profile
-          </Button>
-
-          {role === "ADMIN" && (
-            <>
-              <Button
-                variant="ghost"
-                className="justify-start"
-                onClick={() => router.push("/users")}
-              >
-                <Users className="mr-2 h-4 w-4" /> User Management
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="justify-start"
-                onClick={() => router.push("/roles")}
-              >
-                <Shield className="mr-2 h-4 w-4" /> Role Management
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="justify-start"
-                onClick={() => router.push("/permissions")}
-              >
-                <Lock className="mr-2 h-4 w-4" /> Permissions
-              </Button>
-            </>
-          )}
-
-          <Button
-            variant="destructive"
-            className="justify-start mt-4"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 h-4 w-4" /> Logout
-          </Button>
-        </nav>
-      </aside>
 
       {/* ---------------- MAIN CONTENT ---------------- */}
       <main className="flex-1 p-6 flex justify-center items-center">

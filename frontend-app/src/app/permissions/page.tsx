@@ -107,7 +107,7 @@ export default function PermissionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-8 text-white">
+    <div className="min-h-screen bg-gray-950 text-white">
       <h1 className="text-3xl font-bold mb-6 text-white">Permissions</h1>
 
       <Card className="mb-6 bg-gray-900 border border-gray-700">
