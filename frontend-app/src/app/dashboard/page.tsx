@@ -37,7 +37,6 @@ export default function DashboardPage() {
       const user = JSON.parse(userData);
       setRole((user.role || "").toUpperCase());
     } catch (error) {
-      console.log("Invalid token:", error);
       router.push("/login");
     }
   }, []);
@@ -135,8 +134,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
+
       {/* ---------------------------------------------------------------- */}
-      {/* SIDEBAR */}
+      {/* SIDEBAR — ONLY ONE SIDEBAR NOW */}
       {/* ---------------------------------------------------------------- */}
       <aside className="w-64 bg-white border-r shadow-md p-6 fixed h-full">
         <h1 className="text-2xl font-bold mb-8">Admin Panel</h1>
@@ -148,17 +148,17 @@ export default function DashboardPage() {
               <button
                 key={idx}
                 onClick={() => router.push(item.path)}
-                className="flex items-center gap-3 px-4 py-2 text-left rounded-lg hover:bg-gray-200 transition"
+                className="flex items-center gap-3 px-4 py-2 rounded-lg text-left hover:bg-gray-200 transition"
               >
                 {item.icon}
                 <span className="font-medium">{item.label}</span>
               </button>
             ))}
 
-          {/* Logout Button */}
+          {/* LOGOUT — remains only in sidebar */}
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-4 py-2 text-left rounded-lg hover:bg-red-200 text-red-600 mt-6"
+            className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-200 text-red-600 mt-6 transition"
           >
             <LogoutIcon size={20} />
             <span className="font-medium">Logout</span>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                 onClick={card.action}
                 className={`${card.bg} cursor-pointer rounded-2xl shadow-lg p-6 flex flex-col items-start gap-4 text-white hover:scale-105 transition-transform`}
               >
-                <div>{card.icon}</div>
+                {card.icon}
                 <h2 className="text-xl font-bold">{card.title}</h2>
                 <p className="opacity-90">{card.desc}</p>
               </div>

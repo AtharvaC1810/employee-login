@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Permission {
   id: number;
@@ -17,9 +20,8 @@ export default function PermissionsPage() {
   const [error, setError] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false); // ensures code runs only on client
+  const [isClient, setIsClient] = useState(false);
 
-  // Run only on client
   useEffect(() => {
     setIsClient(true);
 
@@ -33,28 +35,25 @@ export default function PermissionsPage() {
 
     setToken(storedToken);
     const user = JSON.parse(userData);
-    setRole(user.role?.toUpperCase() || "");
+    setRole(user.role?.toUpperCase());
   }, [router]);
 
-  // Fetch permissions
   const fetchPermissions = async () => {
     if (!token) return;
 
     try {
       setLoading(true);
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to fetch permissions");
-      }
+      if (!res.ok) throw new Error("Failed to load permissions");
 
-      const data: Permission[] = await res.json();
+      const data = await res.json();
       setPermissions(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -64,13 +63,8 @@ export default function PermissionsPage() {
     if (token) fetchPermissions();
   }, [token]);
 
-  // Add new permission
   const handleAdd = async () => {
-    if (!token) return;
-    if (!newPerm.name) {
-      setError("Permission name is required");
-      return;
-    }
+    if (!newPerm.name) return setError("Permission name is required!");
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions`, {
@@ -82,91 +76,69 @@ export default function PermissionsPage() {
         body: JSON.stringify(newPerm),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to create permission");
-      }
+      if (!res.ok) throw new Error("Failed to create permission");
 
       setNewPerm({ name: "", description: "" });
       fetchPermissions();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (e: any) {
+      setError(e.message);
     }
   };
 
-  // Delete permission
   const handleDelete = async (id: number) => {
-    if (!token) return;
-    if (!confirm("Are you sure you want to delete this permission?")) return;
+    if (!confirm("Delete this permission?")) return;
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/permissions/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to delete permission");
-      }
-
-      fetchPermissions();
-    } catch (err: any) {
-      setError(err.message);
-    }
+    fetchPermissions();
   };
 
-  if (!isClient) return null; // prevent SSR errors
+  if (!isClient) return null;
 
-  if (role && role !== "ADMIN") {
+  if (role !== "ADMIN") {
     return (
-      <div className="text-center mt-10 text-white text-xl font-semibold">
+      <div className="text-center text-xl mt-20 text-red-400">
         Access Denied
       </div>
     );
   }
 
   return (
-    <div className="p-10 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-3xl font-bold mb-5">Permissions Management</h1>
+    <div>
+      <h1 className="text-3xl font-bold mb-6">Permissions</h1>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-
-      {/* Add Permission */}
-      <div className="flex gap-2 mb-5">
-        <input
-          type="text"
-          placeholder="Permission Name"
-          value={newPerm.name}
-          onChange={(e) => setNewPerm({ ...newPerm, name: e.target.value })}
-          className="p-2 rounded bg-gray-800 text-white flex-1"
-        />
-        <input
-          type="text"
-          placeholder="Description (optional)"
-          value={newPerm.description}
-          onChange={(e) => setNewPerm({ ...newPerm, description: e.target.value })}
-          className="p-2 rounded bg-gray-800 text-white flex-1"
-        />
-        <button
-          onClick={handleAdd}
-          className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700 text-white font-semibold"
-        >
-          Add
-        </button>
-      </div>
+      <Card className="mb-6 bg-gray-900 border-gray-700">
+        <CardContent className="p-4 flex gap-3">
+          <Input
+            placeholder="Permission Name"
+            value={newPerm.name}
+            onChange={(e) => setNewPerm({ ...newPerm, name: e.target.value })}
+            className="bg-gray-800 border-gray-700 text-white"
+          />
+          <Input
+            placeholder="Description"
+            value={newPerm.description}
+            onChange={(e) =>
+              setNewPerm({ ...newPerm, description: e.target.value })
+            }
+            className="bg-gray-800 border-gray-700 text-white"
+          />
+          <Button onClick={handleAdd}>Add</Button>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="bg-gray-800 text-white p-5 rounded-xl shadow-xl space-y-2">
-          {permissions.length === 0 ? (
-            <p className="text-gray-400 text-center">No permissions found</p>
-          ) : (
-            permissions.map((perm) => (
+        <Card className="bg-gray-900 border-gray-700">
+          <CardContent className="p-4 space-y-3">
+            {permissions.map((perm) => (
               <div
                 key={perm.id}
-                className="border-b border-gray-700 py-2 flex justify-between items-center"
+                className="flex justify-between border-b border-gray-700 pb-2"
               >
                 <div>
                   <p className="font-semibold">{perm.name}</p>
@@ -174,16 +146,16 @@ export default function PermissionsPage() {
                     {perm.description || "No description"}
                   </p>
                 </div>
-                <button
+                <Button
+                  variant="destructive"
                   onClick={() => handleDelete(perm.id)}
-                  className="bg-red-600 px-3 py-1 rounded hover:bg-red-700"
                 >
                   Delete
-                </button>
+                </Button>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

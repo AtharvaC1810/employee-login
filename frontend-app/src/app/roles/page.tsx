@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableHead,
+} from "@/components/ui/table";
+import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@/components/ui/select";
 
 interface User {
   id: number;
@@ -11,7 +21,6 @@ interface User {
 }
 
 export default function RoleManagementPage() {
-  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,40 +70,55 @@ export default function RoleManagementPage() {
     }
   };
 
-  if (loading) return <p className="text-white text-center mt-10">Loading...</p>;
-  if (error) return <p className="text-red-500 text-center mt-10">{error}</p>;
-
   return (
-    <div className="min-h-screen bg-gray-900 p-6 text-white">
-      <h1 className="text-3xl font-bold mb-6">Role Management</h1>
-      <table className="w-full table-auto border border-gray-700 rounded-lg overflow-hidden">
-        <thead>
-          <tr className="bg-gray-800">
-            <th className="px-4 py-2 text-left">Name</th>
-            <th className="px-4 py-2 text-left">Email</th>
-            <th className="px-4 py-2 text-left">Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(user => (
-            <tr key={user.id} className="border-b border-gray-700">
-              <td className="px-4 py-2">{user.name}</td>
-              <td className="px-4 py-2">{user.email}</td>
-              <td className="px-4 py-2">
-                <select
-                  value={user.role}
-                  onChange={e => handleRoleChange(user.id, e.target.value)}
-                  className="bg-gray-800 text-white px-2 py-1 rounded"
-                >
-                  <option value="INTERN">Intern</option>
-                  <option value="ENGINEER">Engineer</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <Sidebar />
+      <div className="ml-64 min-h-screen bg-gray-950 p-8 text-white">
+        <Card className="bg-gray-900 border border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Role Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading && <p>Loading...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+
+            {!loading && !error && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-white">Name</TableHead>
+                    <TableHead className="text-white">Email</TableHead>
+                    <TableHead className="text-white">Role</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map(user => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Select
+                          defaultValue={user.role}
+                          onValueChange={(value) => handleRoleChange(user.id, value)}
+                        >
+                          <SelectTrigger className="bg-gray-800 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-900 text-white border-gray-700">
+                            <SelectItem value="INTERN">Intern</SelectItem>
+                            <SelectItem value="ENGINEER">Engineer</SelectItem>
+                            <SelectItem value="ADMIN">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }
