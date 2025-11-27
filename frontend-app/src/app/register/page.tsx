@@ -3,6 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+// ShadCN UI components
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
+
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -12,15 +26,15 @@ export default function RegisterPage() {
     password: "",
   });
 
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: any) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -40,140 +54,125 @@ export default function RegisterPage() {
 
       if (!strongPasswordRegex.test(payload.password)) {
         throw new Error(
-          "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+          "Password must include uppercase, lowercase, number & special char"
         );
       }
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-      // Try to parse JSON safely
-      let data: any;
-      try {
-        data = await res.json();
-      } catch (parseErr) {
-        data = {};
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Registration failed");
 
-      console.log("REGISTER RESPONSE:", data);
+      const token = data?.data?.access_token;
+      const user = data?.data?.user;
 
-      if (!res.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
+      if (!token) throw new Error("No token received from server");
+      if (!user) throw new Error("User data missing");
 
-      // Extract token from multiple possible backend formats
-      const token =
-        data?.token ||
-        data?.access_token ||
-        data?.authToken ||
-        data?.jwt ||
-        data?.data?.token ||
-        data?.data?.access_token ||
-        null;
-
-      // Extract user
-      const user =
-        data?.user ||
-        data?.data?.user ||
-        data?.profile ||
-        null;
-
-      if (!token) {
-        console.error("Token missing in API response:", data);
-        throw new Error("No token received from server");
-      }
-
-      if (!user) {
-        console.error("User missing in API response:", data);
-        throw new Error("No user data received from server");
-      }
-
-      // Save to localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      setSuccess("Registration successful! Redirecting...");
+      setSuccess("Account created successfully! Redirecting...");
 
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: any) {
-      console.error("REGISTER ERROR:", err);
-      setError(err.message || "Registration failed");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-600 px-4">
-      <form
-        onSubmit={handleRegister}
-        className="bg-white p-0 rounded-2xl shadow-xl w-full max-w-xl"
-      >
-        <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 tracking-wide">
-          CREATE ACCOUNT
-        </h2>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-700 to-blue-600 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0">
+        <CardHeader>
+          <CardTitle className="text-center text-3xl font-bold text-gray-900">
+            Create Account
+          </CardTitle>
+          <CardDescription className="text-center">
+            Register to continue to your dashboard
+          </CardDescription>
+        </CardHeader>
 
-        {error && <p className="text-center text-red-600 mb-4">{error}</p>}
-        {success && <p className="text-center text-green-600 mb-4">{success}</p>}
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        {/* Inputs */}
-        <div className="bg-white rounded-t-2xl border border-gray-300 p-6 space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 outline-none border-b border-gray-300 text-black placeholder-gray-500 bg-white"
-          />
+          {success && (
+            <Alert className="mb-4 bg-green-600 text-white">
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 outline-none border-b border-gray-300 text-black placeholder-gray-500 bg-white"
-          />
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Full Name</label>
+              <Input
+                name="name"
+                placeholder="Enter your full name"
+                value={form.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 outline-none text-black placeholder-gray-500 bg-white"
-          />
-        </div>
+            <div>
+              <label className="text-sm font-medium">Email Address</label>
+              <Input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-        {/* Register Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-black text-white py-4 font-bold text-lg rounded-b-2xl hover:bg-gray-800 transition"
-        >
-          {loading ? "Registering..." : "REGISTER"}
-        </button>
+            <div>
+              <label className="text-sm font-medium">Password</label>
+              <Input
+                type="password"
+                name="password"
+                placeholder="Enter strong password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
 
-        <p className="text-center text-gray-700 py-6">
-          Already have an account?{" "}
-          <span
-            className="text-blue-600 cursor-pointer font-semibold hover:underline"
-            onClick={() => router.push("/login")}
-          >
-            Login
-          </span>
-        </p>
-      </form>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full py-5 font-semibold text-lg"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin h-5 w-5" />
+              ) : (
+                "Register"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="flex justify-center">
+          <p className="text-gray-700">
+            Already have an account?{" "}
+            <span
+              onClick={() => router.push("/login")}
+              className="text-blue-600 font-semibold cursor-pointer hover:underline"
+            >
+              Login
+            </span>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

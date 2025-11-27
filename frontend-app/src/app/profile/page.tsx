@@ -2,20 +2,37 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  User,
+  Users,
+  Shield,
+  Lock,
+  LogOut,
+  ChevronRight,
+} from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [role, setRole] = useState("");
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
-    if (!userStr) {
+    const token = localStorage.getItem("token");
+
+    if (!userStr || !token) {
       router.push("/login");
       return;
     }
 
-    setUser(JSON.parse(userStr));
-  }, [router]);
+    const parsed = JSON.parse(userStr);
+    setUser(parsed);
+    setRole(parsed.role?.toUpperCase());
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -23,42 +40,120 @@ export default function ProfilePage() {
     router.push("/login");
   };
 
-  if (!user) return <div className="text-white text-center mt-10">Loading profile...</div>;
+  if (!user)
+    return (
+      <div className="text-white text-center mt-10">Loading profile...</div>
+    );
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-4">
-      <div className="bg-gray-900 bg-opacity-90 backdrop-blur-md p-10 rounded-3xl w-full max-w-md shadow-2xl text-center transition-transform transform hover:scale-105">
-        <h1 className="text-3xl sm:text-4xl text-white font-extrabold mb-4 tracking-wide">
-          Your Profile
-        </h1>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* ---------------- SIDEBAR ---------------- */}
+      <aside className="w-64 bg-white shadow-lg border-r hidden md:flex flex-col p-5">
+        <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+          <LayoutDashboard size={26} /> Dashboard
+        </h2>
 
-        <div className="text-left text-gray-300 space-y-4 mb-6">
-          <p><span className="font-bold text-white">Name:</span> {user.name}</p>
-          <p><span className="font-bold text-white">Email:</span> {user.email}</p>
-          <p><span className="font-bold text-white">Role:</span> {user.role}</p>
-        </div>
+        <nav className="flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            className="justify-start"
+            onClick={() => router.push("/dashboard")}
+          >
+            <ChevronRight className="mr-2 h-4 w-4" /> Dashboard Home
+          </Button>
 
-        <button
-          onClick={() => router.push("/edit-profile")}
-          className="w-full py-3 mb-3 bg-blue-600 hover:bg-blue-700 hover:scale-105 rounded-2xl text-white font-semibold text-lg transition-transform"
-        >
-          Edit Profile
-        </button>
+          <Button
+            variant="ghost"
+            className="justify-start"
+            onClick={() => router.push("/profile")}
+          >
+            <User className="mr-2 h-4 w-4" /> Profile
+          </Button>
 
-        <button
-          onClick={handleLogout}
-          className="w-full py-3 mb-3 bg-red-600 hover:bg-red-700 rounded-2xl text-white font-semibold text-lg transition-transform"
-        >
-          Logout
-        </button>
+          {role === "ADMIN" && (
+            <>
+              <Button
+                variant="ghost"
+                className="justify-start"
+                onClick={() => router.push("/users")}
+              >
+                <Users className="mr-2 h-4 w-4" /> User Management
+              </Button>
 
-        <button
-          onClick={() => router.push("/dashboard")}
-          className="w-full py-3 bg-gradient-to-r from-purple-600 via-pink-500 to-red-500 hover:scale-105 rounded-2xl text-white font-semibold text-lg transition-transform"
-        >
-          Back to Dashboard
-        </button>
-      </div>
+              <Button
+                variant="ghost"
+                className="justify-start"
+                onClick={() => router.push("/roles")}
+              >
+                <Shield className="mr-2 h-4 w-4" /> Role Management
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="justify-start"
+                onClick={() => router.push("/permissions")}
+              >
+                <Lock className="mr-2 h-4 w-4" /> Permissions
+              </Button>
+            </>
+          )}
+
+          <Button
+            variant="destructive"
+            className="justify-start mt-4"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Logout
+          </Button>
+        </nav>
+      </aside>
+
+      {/* ---------------- MAIN CONTENT ---------------- */}
+      <main className="flex-1 p-6 flex justify-center items-center">
+        <Card className="w-full max-w-xl shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold text-gray-800">
+              Your Profile
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-6 text-gray-700">
+            <div className="space-y-3 text-lg">
+              <p>
+                <strong>Name:</strong> {user.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {user.email}
+              </p>
+              <p>
+                <strong>Role:</strong>{" "}
+                <span className="uppercase font-semibold">{user.role}</span>
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                className="w-full"
+                onClick={() => router.push("/edit-profile")}
+              >
+                Edit Profile
+              </Button>
+
+              <Button className="w-full" variant="outline" onClick={() => router.push("/dashboard")}>
+                Back to Dashboard
+              </Button>
+
+              <Button
+                className="w-full"
+                variant="destructive"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -30,7 +37,7 @@ export default function LoginPage() {
 
       if (!res.ok) throw new Error(data.message || "Login failed");
 
-      const user = data.data?.user || data.user; 
+      const user = data.data?.user || data.user;
       const token = data.data?.access_token || data.access_token;
 
       if (!token || !user) throw new Error("Invalid login response");
@@ -47,58 +54,72 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-purple-700 to-blue-600 px-4">
-      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-xl">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-900 tracking-wide">
-          ACCOUNT LOGIN
-        </h1>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-800 via-indigo-800 to-blue-800 px-4">
+      <Card className="w-full max-w-md shadow-2xl border border-gray-700 bg-gray-900/80 backdrop-blur-xl">
+        <CardHeader>
+          <CardTitle className="text-center text-3xl font-bold text-white tracking-wide">
+            Account Login
+          </CardTitle>
+        </CardHeader>
 
-        <form onSubmit={handleLogin}>
-          <div className="flex w-full border border-gray-300 rounded-t-xl overflow-hidden">
-            <input
-              type="email"
-              name="email"
-              placeholder="User Email Id"
-              value={form.email}
-              onChange={handleChange}
-              required
-              className="w-1/2 px-4 py-3 outline-none border-r border-gray-300 text-black placeholder-gray-500 bg-white"
-            />
-
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="w-1/2 px-4 py-3 outline-none text-black placeholder-gray-500 bg-white"
-            />
-          </div>
-
+        <CardContent>
           {error && (
-            <p className="text-red-600 mt-3 mb-1 text-center font-medium">{error}</p>
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle className="font-semibold">Login Failed</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white py-3 font-semibold tracking-wider rounded-b-xl hover:bg-gray-800 transition"
-          >
-            {loading ? "Signing in..." : "SIGN IN"}
-          </button>
-        </form>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                placeholder="Enter email"
+                value={form.email}
+                onChange={handleChange}
+                required
+                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              />
+            </div>
 
-        <p className="text-center mt-5 text-gray-700">
-          Don’t have an account?{" "}
-          <span
-            onClick={() => router.push("/register")}
-            className="text-blue-600 cursor-pointer font-semibold hover:underline"
-          >
-            Register
-          </span>
-        </p>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg"
+            >
+              {loading ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Sign In"}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="flex justify-center">
+          <p className="text-gray-300">
+            Don’t have an account?{" "}
+            <span
+              onClick={() => router.push("/register")}
+              className="text-blue-400 cursor-pointer font-semibold hover:underline"
+            >
+              Register
+            </span>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
