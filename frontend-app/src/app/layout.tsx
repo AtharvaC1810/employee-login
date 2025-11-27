@@ -1,10 +1,12 @@
 "use client";
 
+import './globals.css';
 import Sidebar from "@/components/Sidebar";
 import { usePathname } from "next/navigation";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
   const publicPages = ["/login", "/register"];
 
   const showSidebar = !publicPages.includes(pathname);
