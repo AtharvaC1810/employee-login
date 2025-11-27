@@ -1,16 +1,18 @@
-import './globals.css';
-import Sidebar from "@/components/Sidebar";
+"use client";
 
-export const metadata = {
-  title: 'My App',
-  description: 'Next.js + Tailwind App',
-};
+import Sidebar from "@/components/Sidebar";
+import { usePathname } from "next/navigation";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const publicPages = ["/login", "/register"];
+
+  const showSidebar = !publicPages.includes(pathname);
+
   return (
-    <html lang="en">
-      <Sidebar />
-      <body>{children}</body>
-    </html>
+    <div className="flex">
+      {showSidebar && <Sidebar />}
+      <main className={`${showSidebar ? "ml-64" : ""} flex-1`}>{children}</main>
+    </div>
   );
 }
