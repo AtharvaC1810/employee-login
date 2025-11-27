@@ -17,10 +17,10 @@ export default function Sidebar() {
 
   const menu = [
     { name: "Dashboard", path: "/dashboard" },
-    { name: "Users", path: "/dashboard/users" },
-    { name: "Roles", path: "/dashboard/roles" },
-    { name: "Permissions", path: "/dashboard/permissions" },
-    { name: "Profile", path: "/dashboard/profile" },
+    { name: "Users", path: "/users" },
+    { name: "Roles", path: "/roles" },
+    { name: "Permissions", path: "/permissions" },
+    { name: "Profile", path: "/profile" },
   ];
 
   return (
