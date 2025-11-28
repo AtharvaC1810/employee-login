@@ -33,12 +33,17 @@ import {
 } from "@/components/ui/select";
 import Image from "next/image";
 
+interface Vendor {
+  id: number;
+  name: string;
+}
+
 interface Product {
   id: number;
   name: string;
   price: number;
-  quantity: number;
   image: string;
+  vendor: Vendor;
 }
 
 export default function ProductsPage() {
@@ -56,6 +61,8 @@ function ProductsContent() {
   const [filtered, setFiltered] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
   const [search, setSearch] = useState("");
   const [sortOption, setSortOption] = useState("id-asc");
 
@@ -67,8 +74,8 @@ function ProductsContent() {
   const [form, setForm] = useState({
     name: "",
     price: "",
-    quantity: "",
     image: null as File | null,
+    vendorId: "" as string,
   });
 
   const [error, setError] = useState("");
@@ -77,7 +84,7 @@ function ProductsContent() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // ---------------------
-  // Load user + fetch products
+  // Load user + fetch products + vendors
   // ---------------------
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -92,41 +99,38 @@ function ProductsContent() {
     setCurrentUser(parsed);
 
     fetchProducts(token);
+    fetchVendors(token);
   }, []);
 
-  // ---------------------
-  // Fetch products
-  // ---------------------
   const fetchProducts = async (token: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (res.status === 401) {
-        router.push("/login");
-        return;
-      }
-
-      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
-
+      if (!res.ok) throw new Error("Failed to fetch products");
       const data = await res.json();
-
-      if (!Array.isArray(data)) {
-        console.error("API did not return an array:", data);
-        setProducts([]);
-        setFiltered([]);
-        return;
-      }
-
-      setProducts(data);
-      setFiltered(data);
+      setProducts(Array.isArray(data) ? data : []);
+      setFiltered(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Fetch products error:", err);
+      console.error(err);
       setProducts([]);
       setFiltered([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVendors = async (token: string) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch vendors");
+      const data = await res.json();
+      setVendors(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setVendors([]);
     }
   };
 
@@ -135,15 +139,13 @@ function ProductsContent() {
   // ---------------------
   useEffect(() => {
     let updated = [...products];
-
     if (search.trim()) {
       updated = updated.filter((p) =>
-        `${p.name} ${p.price} ${p.quantity}`
+        `${p.name} ${p.price} ${p.vendor?.name}`
           .toLowerCase()
           .includes(search.toLowerCase())
       );
     }
-
     updated = sortProducts(updated, sortOption);
     setFiltered(updated);
     setCurrentPage(1);
@@ -151,7 +153,6 @@ function ProductsContent() {
 
   const sortProducts = (list: Product[], opt: string) => {
     const sorted = [...list];
-
     switch (opt) {
       case "id-asc":
         sorted.sort((a, b) => a.id - b.id);
@@ -172,7 +173,6 @@ function ProductsContent() {
         sorted.sort((a, b) => b.price - a.price);
         break;
     }
-
     return sorted;
   };
 
@@ -193,8 +193,8 @@ function ProductsContent() {
     setSuccess("");
 
     try {
-      if (!form.name || !form.price || !form.quantity || !form.image) {
-        throw new Error("All fields required including image ");
+      if (!form.name || !form.price || !form.image || !form.vendorId) {
+        throw new Error("All fields required including vendor and image");
       }
 
       const token = localStorage.getItem("token");
@@ -203,8 +203,8 @@ function ProductsContent() {
       const fd = new FormData();
       fd.append("name", form.name);
       fd.append("price", form.price);
-      fd.append("quantity", form.quantity);
       fd.append("image", form.image);
+      fd.append("vendorId", form.vendorId);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: "POST",
@@ -215,8 +215,7 @@ function ProductsContent() {
       if (!res.ok) throw new Error("Failed to create product");
 
       setSuccess("Product created successfully");
-      setForm({ name: "", price: "", quantity: "", image: null });
-
+      setForm({ name: "", price: "", image: null, vendorId: "" });
       fetchProducts(token);
 
       setTimeout(() => setModalOpen(false), 1200);
@@ -285,15 +284,30 @@ function ProductsContent() {
                     value={form.price}
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
                   />
-                  <Input
-                    placeholder="Quantity"
-                    type="number"
-                    className="bg-gray-800 border-gray-700"
-                    value={form.quantity}
-                    onChange={(e) =>
-                      setForm({ ...form, quantity: e.target.value })
-                    }
-                  />
+
+                  {/* Vendor Dropdown */}
+                  <Select
+                    onValueChange={(val) => setForm({ ...form, vendorId: val })}
+                    value={form.vendorId}
+                  >
+                    <SelectTrigger className="w-full bg-gray-800 text-white">
+                      <SelectValue placeholder="Select Vendor" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 text-white">
+                      {vendors.map((v) => (
+                        <SelectItem key={v.id} value={v.id.toString()}>
+                          {v.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem
+                        value="new"
+                        onClick={() => router.push("/vendors/new")}
+                      >
+                        + Add New Vendor
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
                   <Input
                     type="file"
                     accept="image/*"
@@ -350,7 +364,7 @@ function ProductsContent() {
                 <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Qty</TableHead>
+                <TableHead>Vendor</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -370,7 +384,7 @@ function ProductsContent() {
                   </TableCell>
                   <TableCell>{p.name}</TableCell>
                   <TableCell>₹{p.price}</TableCell>
-                  <TableCell>{p.quantity}</TableCell>
+                  <TableCell>{p.vendor?.name || "-"}</TableCell>
                   <TableCell className="text-center">
                     {currentUser?.role === "ADMIN" && (
                       <Button
