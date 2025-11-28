@@ -1,30 +1,27 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
-export class CreateVendorDto {
+export class CreateProductDto {
   @IsNotEmpty()
   @IsString()
   name: string;
 
   @IsNotEmpty()
-  @IsString()
-  companyName: string;
-
-  @IsEmail()
-  email: string;
+  @IsNumber()
+  price: number;
 
   @IsNotEmpty()
+  @IsNumber()
+  quantity: number;
+
+  @IsOptional()
   @IsString()
-  contactNumber: string;
+  image?: string;
 
   @IsNotEmpty()
-  @IsString()
-  address: string;
+  @IsNumber()
+  vendorId: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  sector: string;
-
-  @IsNotEmpty()
-  @IsString()
-  gstNumber: string;
+  vendorName?: string;
 }
