@@ -3,17 +3,26 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { User } from './users/user.entity';
 import { PermissionsModule } from './permissions/permissions.module';
 import { VendorsModule } from './vendors/vendors.module';
+import { ProductsModule } from './products/products.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
-  
+    // ✅ Global Config
     ConfigModule.forRoot({
       isGlobal: true,
     }),
 
+    // ✅ Serve Static Uploads Folder (correct usage)
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'), // Physical folder
+      serveRoot: '/uploads', // URL base path
+    }),
+
+    // ✅ TypeORM Database Configuration
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -25,7 +34,9 @@ import { VendorsModule } from './vendors/vendors.module';
         const database = configService.get<string>('DB_NAME');
 
         if (!host || !port || !username || !password || !database) {
-          throw new Error('Database configuration is missing in .env or environment variables');
+          throw new Error(
+            'Database configuration is missing in .env or environment variables',
+          );
         }
 
         return {
@@ -35,16 +46,18 @@ import { VendorsModule } from './vendors/vendors.module';
           username,
           password,
           database,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true, 
+          autoLoadEntities: true,
+          synchronize: true,
         };
       },
     }),
 
+    // ✅ Modules
     UsersModule,
     AuthModule,
     PermissionsModule,
     VendorsModule,
+    ProductsModule,
   ],
 })
 export class AppModule {}

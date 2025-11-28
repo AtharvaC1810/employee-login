@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
-import { Store as StoreIcon } from "lucide-react";
-
+import { Store as StoreIcon, Package as ProductIcon } from "lucide-react";
 
 import {
   User as UserIcon,
@@ -80,6 +79,17 @@ export default function DashboardPage() {
       visible: role === "ADMIN",
       bg: "bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800",
     },
+
+    // ⭐ NEW — PRODUCTS PAGE CARD
+    {
+      title: "Products Management",
+      desc: "Manage products, price, stock, and images",
+      icon: <ProductIcon size={32} />,
+      action: () => router.push("/products"),
+      visible: role === "ADMIN",
+      bg: "bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500",
+    },
+
     {
       title: "Role Management",
       desc: "Assign and manage user roles",
@@ -108,9 +118,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* ---------------------------------------------------------------- */}
       {/* MAIN CONTENT */}
-      {/* ---------------------------------------------------------------- */}
       <main className="flex-1 p-10">
         <h1 className="text-4xl font-extrabold text-gray-800 mb-4">
           Hello {username}
@@ -119,7 +127,7 @@ export default function DashboardPage() {
           Welcome to your dashboard. Select an option below.
         </p>
 
-        {/* CARDS */}
+        {/* CARDS GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {cards
             .filter((card) => card.visible)

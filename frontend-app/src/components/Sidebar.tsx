@@ -18,7 +18,7 @@ export default function Sidebar() {
     { name: "Dashboard", path: "/dashboard" },
     { name: "Users", path: "/users" },
     { name: "Vendors", path: "/vendors" },      
-      //{ name: "Products", path: "/products" },     
+    { name: "Products", path: "/products" },     
       //{ name: "Orders", path: "/orders" },        
     { name: "Roles", path: "/roles" },
     { name: "Permissions", path: "/permissions" },
