@@ -31,7 +31,6 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-
 import Image from "next/image";
 
 interface Product {
@@ -77,9 +76,9 @@ function ProductsContent() {
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // -----------------------------------------------------
+  // ---------------------
   // Load user + fetch products
-  // -----------------------------------------------------
+  // ---------------------
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
@@ -95,9 +94,9 @@ function ProductsContent() {
     fetchProducts(token);
   }, []);
 
-  // -----------------------------------------------------
+  // ---------------------
   // Fetch products
-  // -----------------------------------------------------
+  // ---------------------
   const fetchProducts = async (token: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
@@ -109,20 +108,31 @@ function ProductsContent() {
         return;
       }
 
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+
       const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        console.error("API did not return an array:", data);
+        setProducts([]);
+        setFiltered([]);
+        return;
+      }
 
       setProducts(data);
       setFiltered(data);
     } catch (err) {
       console.error("Fetch products error:", err);
+      setProducts([]);
+      setFiltered([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // -----------------------------------------------------
-  // Search + sort
-  // -----------------------------------------------------
+  // ---------------------
+  // Search + Sort
+  // ---------------------
   useEffect(() => {
     let updated = [...products];
 
@@ -146,23 +156,18 @@ function ProductsContent() {
       case "id-asc":
         sorted.sort((a, b) => a.id - b.id);
         break;
-
       case "id-desc":
         sorted.sort((a, b) => b.id - a.id);
         break;
-
       case "name-asc":
         sorted.sort((a, b) => a.name.localeCompare(b.name));
         break;
-
       case "name-desc":
         sorted.sort((a, b) => b.name.localeCompare(a.name));
         break;
-
       case "price-asc":
         sorted.sort((a, b) => a.price - b.price);
         break;
-
       case "price-desc":
         sorted.sort((a, b) => b.price - a.price);
         break;
@@ -171,18 +176,17 @@ function ProductsContent() {
     return sorted;
   };
 
-  // -----------------------------------------------------
+  // ---------------------
   // Pagination
-  // -----------------------------------------------------
+  // ---------------------
   const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const paginated = Array.isArray(filtered)
+    ? filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : [];
 
-  // -----------------------------------------------------
+  // ---------------------
   // Create Product
-  // -----------------------------------------------------
+  // ---------------------
   const handleCreateProduct = async (e: any) => {
     e.preventDefault();
     setError("");
@@ -221,9 +225,9 @@ function ProductsContent() {
     }
   };
 
-  // -----------------------------------------------------
+  // ---------------------
   // Delete Product
-  // -----------------------------------------------------
+  // ---------------------
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure?")) return;
 
@@ -274,7 +278,6 @@ function ProductsContent() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
-
                   <Input
                     placeholder="Price"
                     type="number"
@@ -282,7 +285,6 @@ function ProductsContent() {
                     value={form.price}
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
                   />
-
                   <Input
                     placeholder="Quantity"
                     type="number"
@@ -292,7 +294,6 @@ function ProductsContent() {
                       setForm({ ...form, quantity: e.target.value })
                     }
                   />
-
                   <Input
                     type="file"
                     accept="image/*"
@@ -358,7 +359,6 @@ function ProductsContent() {
               {paginated.map((p) => (
                 <TableRow key={p.id} className="border-gray-700">
                   <TableCell>{p.id}</TableCell>
-
                   <TableCell>
                     <Image
                       src={`${process.env.NEXT_PUBLIC_API_URL}/${p.image}`}
@@ -368,11 +368,9 @@ function ProductsContent() {
                       className="rounded"
                     />
                   </TableCell>
-
                   <TableCell>{p.name}</TableCell>
                   <TableCell>₹{p.price}</TableCell>
                   <TableCell>{p.quantity}</TableCell>
-
                   <TableCell className="text-center">
                     {currentUser?.role === "ADMIN" && (
                       <Button
@@ -389,10 +387,7 @@ function ProductsContent() {
 
               {paginated.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-gray-400 py-4"
-                  >
+                  <TableCell colSpan={6} className="text-center py-4 text-gray-400">
                     No products found.
                   </TableCell>
                 </TableRow>
