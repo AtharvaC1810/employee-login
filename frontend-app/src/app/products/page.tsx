@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Sidebar from "@/components/Sidebar";
-import Image from "next/image";
-
-// shadcn imports
 import {
   Dialog,
   DialogContent,
@@ -33,40 +30,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Types
 interface Vendor {
   id: number;
   name: string;
-  companyName?: string;
-  contactNumber?: string;
-  email?: string;
-  address?: string;
-  sector?: string;
-  gstNumber?: string;
-  status?: string;
+  companyName: string;
 }
 
 interface Product {
   id: number;
   name: string;
-  price: number;
-  image: string;
+  description: string;
+  imageUrl?: string;
   vendorId: number;
   vendorName?: string;
 }
 
-interface VendorForm {
-  name: string;
-  companyName: string;
-  contactNumber: string;
-  email: string;
-  address: string;
-  sector: string;
-  gstNumber: string;
-}
-
 export default function ProductsPage() {
   return (
-    <ProtectedRoute allowedRoles={["ADMIN", "ENGINEER", "INTERN"]}>
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
       <ProductsContent />
     </ProtectedRoute>
   );
@@ -75,449 +57,262 @@ export default function ProductsPage() {
 function ProductsContent() {
   const router = useRouter();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filtered, setFiltered] = useState<Product[]>([]);
+  // Vendors
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingVendors, setLoadingVendors] = useState(true);
 
+  // Products
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Search + Pagination
   const [search, setSearch] = useState("");
-  const [sortOption, setSortOption] = useState("id-asc");
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [vendorModalOpen, setVendorModalOpen] = useState(false);
-
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const pageSize = 6;
 
+  // Dialogs
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Product Form
   const [form, setForm] = useState({
     name: "",
-    price: "",
-    image: null as File | null,
     vendorId: "",
-  });
-
-  const [vendorForm, setVendorForm] = useState<VendorForm>({
-    name: "",
-    companyName: "",
-    contactNumber: "",
-    email: "",
-    address: "",
-    sector: "MANUFACTURING",
-    gstNumber: "",
+    description: "",
+    image: null as File | null,
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [vendorError, setVendorError] = useState("");
-  const [vendorSuccess, setVendorSuccess] = useState("");
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  // -----------------------------------------------------
-  // Load user + fetch products + vendors
-  // -----------------------------------------------------
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
-
-    if (!token || !userData) {
-      router.push("/login");
-      return;
-    }
-
-    setCurrentUser(JSON.parse(userData));
-    fetchProducts(token);
-    fetchVendors(token);
-  }, []);
-
-  const fetchProducts = async (token: string) => {
+  // Fetch vendors
+  const fetchVendors = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      setLoadingVendors(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
-      if (!res.ok) throw new Error("Failed to fetch products");
-      const data: Product[] = await res.json();
-      setProducts(data);
-      setFiltered(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchVendors = async (token: string) => {
-    try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to fetch vendors");
+
+      if (!res.ok) throw new Error("Failed to load vendors");
       const data: Vendor[] = await res.json();
       setVendors(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+    } finally {
+      setLoadingVendors(false);
     }
   };
 
-  // -----------------------------------------------------
-  // Search + sort
-  // -----------------------------------------------------
+  // Fetch products
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load products");
+
+      const data: Product[] = await res.json();
+      setProducts(data);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
   useEffect(() => {
-    let updated = [...products];
+    fetchVendors();
+    fetchProducts();
+  }, []);
 
-    if (search.trim()) {
-      updated = updated.filter((p) =>
-        `${p.name} ${p.price} ${p.vendorName}`.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+  // Filtered + paginated products
+  const filtered = products.filter((p) =>
+    `${p.name} ${p.description} ${p.vendorName || ""}`.toLowerCase().includes(search.toLowerCase())
+  );
 
-    updated = sortProducts(updated, sortOption);
-    setFiltered(updated);
-    setCurrentPage(1);
-  }, [search, sortOption, products]);
-
-  const sortProducts = (list: Product[], opt: string) => {
-    const sorted = [...list];
-    switch (opt) {
-      case "id-asc": sorted.sort((a, b) => a.id - b.id); break;
-      case "id-desc": sorted.sort((a, b) => b.id - a.id); break;
-      case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case "name-desc": sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
-      case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
-      case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
-    }
-    return sorted;
-  };
-
-  // -----------------------------------------------------
-  // Pagination
-  // -----------------------------------------------------
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  // -----------------------------------------------------
-  // Create Product
-  // -----------------------------------------------------
-  const handleCreateProduct = async (e: any) => {
+  // Product creation
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setSubmitting(true);
 
     try {
-      if (!form.name || !form.price || !form.image || !form.vendorId) {
-        throw new Error("All fields required including vendor");
-      }
+      if (!form.name.trim()) throw new Error("Product name is required");
+      if (!form.vendorId) throw new Error("Vendor must be selected");
+      if (!form.description.trim()) throw new Error("Description is required");
 
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Unauthorized");
 
-      const fd = new FormData();
-      fd.append("name", form.name);
-      fd.append("price", form.price);
-      fd.append("image", form.image);
-      fd.append("vendorId", form.vendorId);
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("vendorId", form.vendorId.toString());
+      formData.append("description", form.description);
+      if (form.image) formData.append("image", form.image);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-
-      if (!res.ok) throw new Error("Failed to create product");
-
-      setSuccess("Product created successfully");
-      setForm({ name: "", price: "", image: null, vendorId: "" });
-      fetchProducts(token);
-
-      setTimeout(() => setModalOpen(false), 1200);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  // -----------------------------------------------------
-  // Create Vendor inside Products modal
-  // -----------------------------------------------------
-  const handleCreateVendor = async (e: any) => {
-    e.preventDefault();
-    setVendorError("");
-    setVendorSuccess("");
-
-    try {
-      if (!vendorForm.name || !vendorForm.companyName) throw new Error("All fields required");
-
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Unauthorized");
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
-        method: "POST",
+        body: formData,
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(vendorForm),
       });
 
-      if (!res.ok) throw new Error("Failed to create vendor");
-      setVendorSuccess("Vendor created successfully");
-      fetchVendors(token);
-      setVendorForm({
-        name: "",
-        companyName: "",
-        contactNumber: "",
-        email: "",
-        address: "",
-        sector: "MANUFACTURING",
-        gstNumber: "",
-      });
-      setTimeout(() => setVendorModalOpen(false), 1000);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to create product");
+      }
+
+      setSuccess("Product created successfully");
+      setForm({ name: "", vendorId: "", description: "", image: null });
+      fetchProducts();
+      setTimeout(() => setModalOpen(false), 800);
     } catch (err: any) {
-      setVendorError(err.message);
+      setError(err.message || "Failed to create product");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // -----------------------------------------------------
-  // Delete Product
-  // -----------------------------------------------------
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Error deleting");
-      setProducts(products.filter((p) => p.id !== id));
-    } catch (err) {
-      alert("Delete failed");
-    }
-  };
-
-  if (loading) return <p className="text-center mt-10 text-white">Loading...</p>;
+  if (loadingVendors || loadingProducts) return <p className="text-center mt-10 text-white">Loading...</p>;
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      <Sidebar />
+    <div className="flex bg-gray-900 min-h-screen text-white">
       <main className="flex-1 p-8 pl-64">
-        {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Products Management</h1>
+          <h1 className="text-3xl font-bold">Products</h1>
 
-          {currentUser?.role === "ADMIN" && (
-            <>
-              {/* Product Modal */}
-              <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-green-600 hover:bg-green-700">+ Add Product</Button>
-                </DialogTrigger>
+          <div className="flex items-center gap-3">
+            <Input
+              placeholder="Search products..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-gray-800 text-white placeholder-gray-400"
+            />
 
-                <DialogContent className="bg-gray-900 border-gray-700">
-                  <DialogHeader>
-                    <DialogTitle>Add New Product</DialogTitle>
-                  </DialogHeader>
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-green-600 hover:bg-green-700">+ Add Product</Button>
+              </DialogTrigger>
 
-                  <form onSubmit={handleCreateProduct} className="space-y-4 mt-4">
-                    <Input
-                      placeholder="Product Name"
-                      className="bg-gray-800 border-gray-700"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    />
+              <DialogContent aria-describedby="product-form-description" className="bg-gray-900 border-gray-700">
+                <DialogHeader>
+                  <DialogTitle>Add New Product</DialogTitle>
+                </DialogHeader>
 
-                    <Input
-                      placeholder="Price"
-                      type="number"
-                      className="bg-gray-800 border-gray-700"
-                      value={form.price}
-                      onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    />
+                <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+                  <Input
+                    placeholder="Product Name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
 
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      className="bg-gray-800 border-gray-700"
-                      onChange={(e) =>
-                        setForm({ ...form, image: e.target.files?.[0] || null })
-                      }
-                    />
+                  <Select
+                    value={form.vendorId}
+                    onValueChange={(v) => setForm({ ...form, vendorId: v })}
+                  >
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectValue placeholder="Select Vendor" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-900 text-white border-gray-700">
+                      {vendors.map((v) => (
+                        <SelectItem key={v.id} value={v.id.toString()}>
+                          {v.companyName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                    {/* Vendor Dropdown */}
-                    <Select
-                      value={form.vendorId}
-                      onValueChange={(val) => {
-                        if (val === "new") setVendorModalOpen(true);
-                        else setForm({ ...form, vendorId: val });
-                      }}
+                  <Button
+                    type="button"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => router.push("/vendors")} // redirect to vendors page
+                  >
+                    + Add New Vendor
+                  </Button>
+
+                  <Input
+                    placeholder="Description"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setForm({ ...form, image: e.target.files?.[0] ?? null })}
+                    className="bg-gray-800 border-gray-700 text-white p-2"
+                  />
+
+                  {error && <p className="text-red-400">{error}</p>}
+                  {success && <p className="text-green-400">{success}</p>}
+
+                  <DialogFooter>
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled={submitting}
                     >
-                      <SelectTrigger className="w-full bg-gray-800 text-white">
-                        <SelectValue placeholder="Select Vendor" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 text-white">
-                        {vendors.map((v) => (
-                          <SelectItem key={v.id} value={v.id.toString()}>
-                            {v.companyName}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="new">+ Add New Vendor</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {error && <p className="text-red-400">{error}</p>}
-                    {success && <p className="text-green-400">{success}</p>}
-
-                    <DialogFooter>
-                      <Button className="bg-blue-600 hover:bg-blue-700">Create</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-
-              {/* Vendor Modal */}
-              <Dialog open={vendorModalOpen} onOpenChange={setVendorModalOpen}>
-                <DialogContent className="bg-gray-900 border-gray-700">
-                  <DialogHeader>
-                    <DialogTitle>Add New Vendor</DialogTitle>
-                  </DialogHeader>
-
-                  <form onSubmit={handleCreateVendor} className="space-y-4 mt-4">
-                    <Input
-                      placeholder="Primary contact name"
-                      value={vendorForm.name}
-                      onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-
-                    <Input
-                      placeholder="Company name"
-                      value={vendorForm.companyName}
-                      onChange={(e) =>
-                        setVendorForm({ ...vendorForm, companyName: e.target.value })
-                      }
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-
-                    <Input
-                      placeholder="Contact no."
-                      value={vendorForm.contactNumber}
-                      onChange={(e) =>
-                        setVendorForm({ ...vendorForm, contactNumber: e.target.value })
-                      }
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-
-                    <Input
-                      placeholder="Email"
-                      value={vendorForm.email}
-                      onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-
-                    <Input
-                      placeholder="Address"
-                      value={vendorForm.address}
-                      onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-
-                    <Select
-                      value={vendorForm.sector}
-                      onValueChange={(sector) => setVendorForm({ ...vendorForm, sector })}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                        <SelectValue placeholder="Sector" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-900 text-white border-gray-700">
-                        <SelectItem value="MANUFACTURING">Manufacturing</SelectItem>
-                        <SelectItem value="IT">IT</SelectItem>
-                        <SelectItem value="SERVICES">Services</SelectItem>
-                        <SelectItem value="RETAIL">Retail</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Input
-                      placeholder="GST Number"
-                      value={vendorForm.gstNumber}
-                      onChange={(e) => setVendorForm({ ...vendorForm, gstNumber: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-
-                    {vendorError && <p className="text-red-400">{vendorError}</p>}
-                    {vendorSuccess && <p className="text-green-400">{vendorSuccess}</p>}
-
-                    <DialogFooter>
-                      <Button className="bg-blue-600 hover:bg-blue-700">Create Vendor</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </>
-          )}
+                      {submitting ? "Submitting..." : "Create Product"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
-        {/* PRODUCTS TABLE */}
-        <div className="rounded-lg bg-gray-800 p-4 mt-4">
+        <div className="rounded-lg bg-gray-800 p-4">
           <Table>
             <TableHeader>
               <TableRow className="border-gray-700">
-                <TableHead>ID</TableHead>
-                <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Price</TableHead>
                 <TableHead>Vendor</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Image</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {paginated.map((p) => (
                 <TableRow key={p.id} className="border-gray-700">
-                  <TableCell>{p.id}</TableCell>
-                  <TableCell>
-                    <Image
-                      src={`${process.env.NEXT_PUBLIC_API_URL}/${p.image}`}
-                      alt="product"
-                      width={50}
-                      height={50}
-                      className="rounded"
-                    />
-                  </TableCell>
                   <TableCell>{p.name}</TableCell>
-                  <TableCell>₹{p.price}</TableCell>
                   <TableCell>{p.vendorName}</TableCell>
-                  <TableCell className="text-center">
-                    {currentUser?.role === "ADMIN" && (
-                      <Button
-                        size="sm"
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => handleDelete(p.id)}
-                      >
-                        Delete
-                      </Button>
-                    )}
+                  <TableCell>{p.description}</TableCell>
+                  <TableCell>
+                    {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-16 h-16 object-cover" />}
                   </TableCell>
                 </TableRow>
               ))}
 
               {paginated.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-400 py-4">
-                    No products found.
+                  <TableCell colSpan={4} className="text-center text-gray-400 py-4">
+                    No products found
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
 
-          {/* PAGINATION */}
-          <div className="flex justify-between items-center mt-6">
+          <div className="flex justify-between mt-4">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-900"
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             >
               Previous
             </Button>
@@ -526,9 +321,8 @@ function ProductsContent() {
             </span>
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-900"
               disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             >
               Next
             </Button>
