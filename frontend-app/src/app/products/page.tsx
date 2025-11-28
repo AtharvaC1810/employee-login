@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Sidebar from "@/components/Sidebar";
+
 import {
   Dialog,
   DialogContent,
@@ -12,8 +13,10 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
 import {
   Table,
   TableBody,
@@ -22,6 +25,7 @@ import {
   TableHead,
   TableHeader,
 } from "@/components/ui/table";
+
 import {
   Select,
   SelectTrigger,
@@ -30,22 +34,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Types
+// --------------------------------------
+// Interfaces (Fixed)
+// --------------------------------------
 interface Vendor {
   id: number;
-  name: string;
-  companyName: string;
+  company_name: string;
 }
 
 interface Product {
   id: number;
   name: string;
   description: string;
-  imageUrl?: string;
   vendorId: number;
-  vendorName?: string;
+  vendor?: Vendor;
+  image?: string;
 }
 
+// --------------------------------------
+// Page with Auth
+// --------------------------------------
 export default function ProductsPage() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -54,6 +62,9 @@ export default function ProductsPage() {
   );
 }
 
+// --------------------------------------
+// Products Page Logic
+// --------------------------------------
 function ProductsContent() {
   const router = useRouter();
 
@@ -70,11 +81,11 @@ function ProductsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
-  // Dialogs
+  // Dialog state
   const [modalOpen, setModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Product Form
+  // Form state
   const [form, setForm] = useState({
     name: "",
     vendorId: "",
@@ -85,42 +96,46 @@ function ProductsContent() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // --------------------------------------
   // Fetch vendors
+  // --------------------------------------
   const fetchVendors = async () => {
     try {
       setLoadingVendors(true);
       const token = localStorage.getItem("token");
-      if (!token) return;
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) throw new Error("Failed to load vendors");
-      const data: Vendor[] = await res.json();
+
+      const data = await res.json();
       setVendors(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     } finally {
       setLoadingVendors(false);
     }
   };
 
+  // --------------------------------------
   // Fetch products
+  // --------------------------------------
   const fetchProducts = async () => {
     try {
       setLoadingProducts(true);
       const token = localStorage.getItem("token");
-      if (!token) return;
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (!res.ok) throw new Error("Failed to load products");
 
-      const data: Product[] = await res.json();
+      const data = await res.json();
       setProducts(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     } finally {
       setLoadingProducts(false);
@@ -132,64 +147,81 @@ function ProductsContent() {
     fetchProducts();
   }, []);
 
-  // Filtered + paginated products
+  // --------------------------------------
+  // Search + Pagination
+  // --------------------------------------
   const filtered = products.filter((p) =>
-    `${p.name} ${p.description} ${p.vendorName || ""}`.toLowerCase().includes(search.toLowerCase())
+    `${p.name} ${p.description} ${p.vendor?.company_name || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  // Product creation
+  // --------------------------------------
+  // Create Product
+  // --------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     setError("");
     setSuccess("");
-    setSubmitting(true);
 
     try {
-      if (!form.name.trim()) throw new Error("Product name is required");
-      if (!form.vendorId) throw new Error("Vendor must be selected");
-      if (!form.description.trim()) throw new Error("Description is required");
-
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Unauthorized");
 
-      const formData = new FormData();
-      formData.append("name", form.name);
-      formData.append("vendorId", form.vendorId.toString());
-      formData.append("description", form.description);
-      if (form.image) formData.append("image", form.image);
+      const fd = new FormData();
+      fd.append("name", form.name);
+      fd.append("description", form.description);
+      fd.append("vendorId", form.vendorId.toString());
+
+      if (form.image) fd.append("image", form.image);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: "POST",
-        body: formData,
+        body: fd,
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to create product");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to create product");
       }
 
-      setSuccess("Product created successfully");
-      setForm({ name: "", vendorId: "", description: "", image: null });
+      setSuccess("Product created successfully!");
+
+      setForm({
+        name: "",
+        vendorId: "",
+        description: "",
+        image: null,
+      });
+
       fetchProducts();
       setTimeout(() => setModalOpen(false), 800);
     } catch (err: any) {
-      setError(err.message || "Failed to create product");
+      setError(err.message || "Error creating product");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loadingVendors || loadingProducts) return <p className="text-center mt-10 text-white">Loading...</p>;
+  if (loadingVendors || loadingProducts)
+    return <p className="text-center mt-10 text-white">Loading...</p>;
 
+  // --------------------------------------
+  // UI
+  // --------------------------------------
   return (
     <div className="flex bg-gray-900 min-h-screen text-white">
+      <Sidebar />
+
       <main className="flex-1 p-8 pl-64">
+        {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Products</h1>
 
@@ -206,11 +238,12 @@ function ProductsContent() {
                 <Button className="bg-green-600 hover:bg-green-700">+ Add Product</Button>
               </DialogTrigger>
 
-              <DialogContent aria-describedby="product-form-description" className="bg-gray-900 border-gray-700">
+              <DialogContent className="bg-gray-900 border-gray-700">
                 <DialogHeader>
-                  <DialogTitle>Add New Product</DialogTitle>
+                  <DialogTitle>Add Product</DialogTitle>
                 </DialogHeader>
 
+                {/* PRODUCT FORM */}
                 <form onSubmit={handleSubmit} className="space-y-4 mt-2">
                   <Input
                     placeholder="Product Name"
@@ -219,6 +252,7 @@ function ProductsContent() {
                     className="bg-gray-800 border-gray-700 text-white"
                   />
 
+                  {/* Vendor Select */}
                   <Select
                     value={form.vendorId}
                     onValueChange={(v) => setForm({ ...form, vendorId: v })}
@@ -226,10 +260,11 @@ function ProductsContent() {
                     <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                       <SelectValue placeholder="Select Vendor" />
                     </SelectTrigger>
+
                     <SelectContent className="bg-gray-900 text-white border-gray-700">
                       {vendors.map((v) => (
                         <SelectItem key={v.id} value={v.id.toString()}>
-                          {v.companyName}
+                          {v.company_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -238,7 +273,7 @@ function ProductsContent() {
                   <Button
                     type="button"
                     className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => router.push("/vendors")} // redirect to vendors page
+                    onClick={() => router.push("/vendors")}
                   >
                     + Add New Vendor
                   </Button>
@@ -257,6 +292,7 @@ function ProductsContent() {
                     className="bg-gray-800 border-gray-700 text-white p-2"
                   />
 
+                  {/* MESSAGES */}
                   {error && <p className="text-red-400">{error}</p>}
                   {success && <p className="text-green-400">{success}</p>}
 
@@ -275,6 +311,7 @@ function ProductsContent() {
           </div>
         </div>
 
+        {/* TABLE */}
         <div className="rounded-lg bg-gray-800 p-4">
           <Table>
             <TableHeader>
@@ -290,24 +327,30 @@ function ProductsContent() {
               {paginated.map((p) => (
                 <TableRow key={p.id} className="border-gray-700">
                   <TableCell>{p.name}</TableCell>
-                  <TableCell>{p.vendorName}</TableCell>
+                  <TableCell>{p.vendor?.company_name}</TableCell>
                   <TableCell>{p.description}</TableCell>
                   <TableCell>
-                    {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-16 h-16 object-cover" />}
+                    {p.image && (
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${p.image}`}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
 
               {paginated.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-400 py-4">
-                    No products found
+                  <TableCell colSpan={4} className="py-6 text-center text-gray-400">
+                    No products found.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
 
+          {/* PAGINATION */}
           <div className="flex justify-between mt-4">
             <Button
               variant="outline"
@@ -316,9 +359,9 @@ function ProductsContent() {
             >
               Previous
             </Button>
-            <span className="text-gray-300">
-              Page {currentPage} of {totalPages}
-            </span>
+
+            <span className="text-gray-300">Page {currentPage} of {totalPages}</span>
+
             <Button
               variant="outline"
               disabled={currentPage === totalPages}
