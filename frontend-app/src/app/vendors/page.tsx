@@ -329,9 +329,6 @@ function VendorsContent() {
 
   return (
     <div className="flex bg-gray-900 min-h-screen text-white">
-      {/* LEFT SIDEBAR */}
-      <Sidebar />
-
       {/* MAIN */}
       <main className="flex-1 p-8 pl-64">
         {/* HEADER */}
