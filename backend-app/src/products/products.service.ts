@@ -13,43 +13,49 @@ export class ProductsService {
     private readonly productRepo: Repository<Product>,
   ) {}
 
-  // -------------------------------
+  // ----------------------------------------------------
   // CREATE PRODUCT
-  // -------------------------------
+  // ----------------------------------------------------
   async create(dto: CreateProductDto, file?: Multer.File) {
     const product = this.productRepo.create({
-      ...dto,
-      image: file?.filename || null,
+      name: dto.name,                  // updated
+      price: dto.price,                // updated
+      quantity: dto.quantity ?? 0,     // optional
+      vendorId: dto.vendorId,          // from dropdown
+      vendorName: dto.vendorName,      // stored from vendor table
+      image: file?.filename || null,   // uploaded image file
     });
 
     return this.productRepo.save(product);
   }
 
-  // -------------------------------
+  // ----------------------------------------------------
   // GET ALL PRODUCTS
-  // -------------------------------
+  // ----------------------------------------------------
   findAll() {
     return this.productRepo.find();
   }
 
-  // -------------------------------
+  // ----------------------------------------------------
   // GET ONE PRODUCT
-  // -------------------------------
+  // ----------------------------------------------------
   async findOne(id: number) {
     const product = await this.productRepo.findOne({ where: { id } });
 
-    if (!product) throw new NotFoundException("Product not found");
+    if (!product) {
+      throw new NotFoundException("Product not found");
+    }
 
     return product;
   }
 
-  // -------------------------------
-  // UPDATE PRODUCT   <-- FIX
-  // -------------------------------
+  // ----------------------------------------------------
+  // UPDATE PRODUCT
+  // ----------------------------------------------------
   async update(id: number, dto: CreateProductDto, file?: Multer.File) {
     const product = await this.findOne(id);
 
-    // Remove old image if new one is uploaded
+    // remove old image if new one uploaded
     if (file && product.image) {
       const oldPath = `./uploads/products/${product.image}`;
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
@@ -57,7 +63,11 @@ export class ProductsService {
 
     const updatedProduct = {
       ...product,
-      ...dto,
+      name: dto.name ?? product.name,
+      price: dto.price ?? product.price,
+      quantity: dto.quantity ?? product.quantity,
+      vendorId: dto.vendorId ?? product.vendorId,
+      vendorName: dto.vendorName ?? product.vendorName,
       image: file?.filename || product.image,
     };
 
@@ -65,13 +75,13 @@ export class ProductsService {
     return updatedProduct;
   }
 
-  // -------------------------------
+  // ----------------------------------------------------
   // DELETE PRODUCT
-  // -------------------------------
+  // ----------------------------------------------------
   async remove(id: number) {
     const product = await this.findOne(id);
 
-    // Delete product image
+    // delete product image from server
     if (product.image) {
       const filePath = `./uploads/products/${product.image}`;
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

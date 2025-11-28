@@ -16,4 +16,11 @@ export class Product {
 
   @Column({ nullable: true })
   image: string;
+
+  // NEW FIELD
+  @Column()
+  vendorId: number;
+
+  @Column({ nullable: true })
+  vendorName: string;
 }
