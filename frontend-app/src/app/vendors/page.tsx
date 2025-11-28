@@ -284,25 +284,35 @@ function ProductsContent() {
                   />
 
                   {/* Vendor Dropdown */}
-                  <Select
-                    onValueChange={(val) => {
-                      if (val === "new") router.push("/vendors/new");
-                      else setForm({ ...form, vendorId: val });
-                    }}
-                    value={form.vendorId}
-                  >
-                    <SelectTrigger className="w-full bg-gray-800 text-white">
-                      <SelectValue placeholder="Select Vendor" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 text-white">
-                      {vendors.map((v) => (
-                        <SelectItem key={v.id} value={v.id.toString()}>
-                          {v.companyName || v.name}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="new">+ Add New Vendor</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {/* Vendor Dropdown */}
+<Select
+  value={form.vendorId}
+  onValueChange={(val) => {
+    if (val === "new") {
+      router.push("/vendors/new"); // redirect to create vendor page
+    } else {
+      setForm({ ...form, vendorId: val });
+    }
+  }}
+>
+                <SelectTrigger className="w-full bg-gray-800 text-white">
+                    <SelectValue placeholder="Select Vendor" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 text-white">
+                    {vendors.length === 0 && (
+                    <SelectItem value="" disabled>
+                        No vendors available
+                    </SelectItem>
+                    )}
+                    {vendors.map((v) => (
+                    <SelectItem key={v.id} value={v.id.toString()}>
+                        {v.companyName || v.name}
+                    </SelectItem>
+                    ))}
+                    <SelectItem value="new">+ Add New Vendor</SelectItem>
+                </SelectContent>
+                </Select>
+
 
                   <Input
                     type="file"
