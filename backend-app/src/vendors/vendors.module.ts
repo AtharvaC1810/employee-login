@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { VendorsController } from './vendors.controller';
 import { VendorsService } from './vendors.service';
-import { Vendor } from './vendor.entity';
+import { Vendor } from './entities/vendor.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Vendor])],
