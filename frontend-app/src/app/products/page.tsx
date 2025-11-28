@@ -90,15 +90,14 @@ function ProductsContent() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
   const [vendorError, setVendorError] = useState("");
   const [vendorSuccess, setVendorSuccess] = useState("");
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // ---------------------------------
+  // ----------------------------
   // INITIAL LOAD
-  // ---------------------------------
+  // ----------------------------
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
@@ -109,42 +108,21 @@ function ProductsContent() {
     }
 
     setCurrentUser(JSON.parse(user));
-    fetchProducts(token);
-    fetchVendors(token);
+    loadData(token);
   }, []);
 
-  // ---------------------------------
-  // FETCH PRODUCTS
-  // ---------------------------------
-  const fetchProducts = async (token: string) => {
+  const loadData = async (token: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await res.json();
-
-      // FIX vendorName: match vendorId with vendors table
-      const vendorMap: Record<number, string> = {};
-      vendors.forEach((v) => (vendorMap[v.id] = v.companyName || v.name));
-
-      const updated = data.map((p: Product) => ({
-        ...p,
-        vendorName: vendorMap[p.vendorId] || "Unknown",
-      }));
-
-      setProducts(updated);
-      setFiltered(updated);
-    } catch (err) {
-      console.log(err);
+      await fetchVendors(token); // fetch vendors first
+      await fetchProducts(token); // then fetch products
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------------------------------
+  // ----------------------------
   // FETCH VENDORS
-  // ---------------------------------
+  // ----------------------------
   const fetchVendors = async (token: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
@@ -157,66 +135,50 @@ function ProductsContent() {
     }
   };
 
-  // ---------------------------------
-  // SEARCH + SORT
-  // ---------------------------------
-  useEffect(() => {
-    let updated = [...products];
+  // ----------------------------
+  // FETCH PRODUCTS
+  // ----------------------------
+  const fetchProducts = async (token: string) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data: Product[] = await res.json();
 
-    if (search.trim()) {
-      updated = updated.filter((p) =>
-        `${p.name} ${p.price} ${p.vendorName}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      );
+      const vendorMap: Record<number, string> = {};
+      vendors.forEach((v) => (vendorMap[v.id] = v.companyName || v.name));
+
+      const updated = data.map((p: Product) => ({
+        ...p,
+        vendorName: vendorMap[p.vendorId] || "Unknown",
+      }));
+
+      setProducts(updated);
+      setFiltered(updated);
+    } catch (err) {
+      console.log(err);
     }
-
-    updated = sortProducts(updated);
-    setFiltered(updated);
-    setCurrentPage(1);
-  }, [search, sortOption, products]);
-
-  const sortProducts = (list: Product[]) => {
-    const sorted = [...list];
-    switch (sortOption) {
-      case "id-asc": sorted.sort((a, b) => a.id - b.id); break;
-      case "id-desc": sorted.sort((a, b) => b.id - a.id); break;
-      case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case "name-desc": sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
-      case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
-      case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
-    }
-    return sorted;
   };
 
-  // ---------------------------------
-  // PAGINATION
-  // ---------------------------------
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginated = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
-  // ---------------------------------
+  // ----------------------------
   // CREATE PRODUCT
-  // ---------------------------------
+  // ----------------------------
   const handleCreateProduct = async (e: any) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
     try {
-      if (!form.name || !form.price || !form.vendorId || !form.image)
-        throw new Error("All fields required");
+      if (!form.name || !form.price || !form.vendorId)
+        throw new Error("Name, price, and vendor are required");
 
       const token = localStorage.getItem("token");
 
       const fd = new FormData();
       fd.append("name", form.name);
-      fd.append("price", form.price);
-      fd.append("vendorId", form.vendorId);
-      fd.append("image", form.image);
+      fd.append("price", Number(form.price).toString());
+      fd.append("vendorId", Number(form.vendorId).toString());
+      if (form.image) fd.append("image", form.image);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: "POST",
@@ -224,22 +186,24 @@ function ProductsContent() {
         body: fd,
       });
 
-      if (!res.ok) throw new Error("Failed to create");
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to create product");
+      }
 
-      setSuccess("Product created");
+      setSuccess("Product created successfully");
       setForm({ name: "", price: "", vendorId: "", image: null });
 
       await fetchProducts(token!);
-
       setTimeout(() => setModalOpen(false), 800);
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  // ---------------------------------
+  // ----------------------------
   // CREATE VENDOR
-  // ---------------------------------
+  // ----------------------------
   const handleCreateVendor = async (e: any) => {
     e.preventDefault();
     setVendorError("");
@@ -264,6 +228,7 @@ function ProductsContent() {
 
       setVendorSuccess("Vendor created");
       setVendorForm({ name: "", companyName: "" });
+
       await fetchVendors(token!);
       setTimeout(() => setVendorModalOpen(false), 800);
     } catch (err: any) {
@@ -271,9 +236,9 @@ function ProductsContent() {
     }
   };
 
-  // ---------------------------------
+  // ----------------------------
   // DELETE PRODUCT
-  // ---------------------------------
+  // ----------------------------
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure?")) return;
 
@@ -290,9 +255,48 @@ function ProductsContent() {
     }
   };
 
-  // ---------------------------------
+  // ----------------------------
+  // SEARCH + SORT
+  // ----------------------------
+  useEffect(() => {
+    let updated = [...products];
+    if (search.trim()) {
+      updated = updated.filter((p) =>
+        `${p.name} ${p.price} ${p.vendorName}`
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    }
+    updated = sortProducts(updated);
+    setFiltered(updated);
+    setCurrentPage(1);
+  }, [search, sortOption, products]);
+
+  const sortProducts = (list: Product[]) => {
+    const sorted = [...list];
+    switch (sortOption) {
+      case "id-asc": sorted.sort((a, b) => a.id - b.id); break;
+      case "id-desc": sorted.sort((a, b) => b.id - a.id); break;
+      case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case "name-desc": sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
+      case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
+      case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
+    }
+    return sorted;
+  };
+
+  // ----------------------------
+  // PAGINATION
+  // ----------------------------
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // ----------------------------
   // RENDER
-  // ---------------------------------
+  // ----------------------------
   if (loading)
     return <p className="text-center mt-10 text-white">Loading...</p>;
 
