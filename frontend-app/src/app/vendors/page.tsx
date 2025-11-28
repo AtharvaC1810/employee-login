@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Sidebar from "@/components/Sidebar";
 
+// shadcn imports (same as your users page)
 import {
   Dialog,
   DialogContent,
@@ -30,414 +31,522 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import Image from "next/image";
 
 interface Vendor {
   id: number;
   name: string;
   companyName?: string;
+  contactNumber?: string;
+  email?: string;
+  address?: string;
+  sector?: string;
+  gstNumber?: string;
+  status?: string;
 }
 
-interface Product {
-  id: number;
+interface VendorForm {
   name: string;
-  price: number;
-  image: string;
-  vendor?: Vendor;
+  companyName: string;
+  contactNumber: string;
+  email: string;
+  address: string;
+  sector: string;
+  gstNumber: string;
 }
 
-export default function ProductsPage() {
+export default function VendorsPage() {
+  // Only ADMIN should manage vendors in most setups — adjust allowedRoles if needed
   return (
-    <ProtectedRoute allowedRoles={["ADMIN", "ENGINEER", "INTERN"]}>
-      <ProductsContent />
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <VendorsContent />
     </ProtectedRoute>
   );
 }
 
-function ProductsContent() {
+function VendorsContent() {
   const router = useRouter();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filtered, setFiltered] = useState<Product[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
+  const [currentVendor, setCurrentVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-
+  // Search + Sort
   const [search, setSearch] = useState("");
   const [sortOption, setSortOption] = useState("id-asc");
 
+  // Modal (create / edit)
   const [modalOpen, setModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const pageSize = 6;
 
-  const [form, setForm] = useState({
+  // Create / Edit form
+  const [form, setForm] = useState<VendorForm>({
     name: "",
-    price: "",
-    image: null as File | null,
-    vendorId: "" as string,
+    companyName: "",
+    contactNumber: "",
+    email: "",
+    address: "",
+    sector: "MANUFACTURING",
+    gstNumber: "",
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  // ---------------------
-  // Load user + fetch products + vendors
-  // ---------------------
+  // LOAD CURRENT USER (for possible role-based filtering later)
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
-
-    if (!token || !userData) {
-      router.push("/login");
-      return;
-    }
-
-    setCurrentUser(JSON.parse(userData));
-    fetchProducts(token);
-    fetchVendors(token);
+    const stored = localStorage.getItem("user");
+    // we don't strictly need the user here, but keep pattern consistent
+    // const parsed = stored ? JSON.parse(stored) : null;
+    // setCurrentUser(parsed);
   }, []);
 
-  const fetchProducts = async (token: string) => {
+  // FETCH ALL VENDORS
+  const fetchVendors = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to fetch products");
-      const data = await res.json();
-      setProducts(Array.isArray(data) ? data : []);
-      setFiltered(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
-      setProducts([]);
-      setFiltered([]);
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) throw new Error("Failed to load vendors");
+      const data: Vendor[] = await res.json();
+
+      setVendors(data);
+      setFilteredVendors(data);
+    } catch (err: any) {
+      console.error("Vendor load error:", err);
+      setError(err.message || "Failed to load vendors");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchVendors = async (token: string) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch vendors");
-      const data = await res.json();
-      setVendors(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
-      setVendors([]);
-    }
-  };
-
-  // ---------------------
-  // Search + Sort
-  // ---------------------
   useEffect(() => {
-    let updated = [...products];
+    fetchVendors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // SEARCH + SORT + FILTER
+  useEffect(() => {
+    let updated = [...vendors];
+
     if (search.trim()) {
-      updated = updated.filter((p) =>
-        `${p.name} ${p.price} ${p.vendor?.name}`
+      updated = updated.filter((v) =>
+        `${v.name} ${v.companyName} ${v.email} ${v.contactNumber} ${v.sector}`
           .toLowerCase()
           .includes(search.toLowerCase())
       );
     }
-    updated = sortProducts(updated, sortOption);
-    setFiltered(updated);
-    setCurrentPage(1);
-  }, [search, sortOption, products]);
 
-  const sortProducts = (list: Product[], opt: string) => {
+    updated = sortVendors(updated, sortOption);
+    setFilteredVendors(updated);
+    setCurrentPage(1);
+  }, [search, sortOption, vendors]);
+
+  // SORT FUNCTION
+  const sortVendors = (list: Vendor[], opt: string) => {
     const sorted = [...list];
     switch (opt) {
       case "id-asc":
-        sorted.sort((a, b) => a.id - b.id);
+        sorted.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
         break;
       case "id-desc":
-        sorted.sort((a, b) => b.id - a.id);
+        sorted.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
         break;
       case "name-asc":
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        sorted.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
         break;
       case "name-desc":
-        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        sorted.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
         break;
-      case "price-asc":
-        sorted.sort((a, b) => a.price - b.price);
+      case "company-asc":
+        sorted.sort((a, b) => (a.companyName || "").localeCompare(b.companyName || ""));
         break;
-      case "price-desc":
-        sorted.sort((a, b) => b.price - a.price);
+      case "company-desc":
+        sorted.sort((a, b) => (b.companyName || "").localeCompare(a.companyName || ""));
         break;
     }
     return sorted;
   };
 
-  // ---------------------
-  // Pagination
-  // ---------------------
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = Array.isArray(filtered)
-    ? filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-    : [];
+  // PAGINATION
+  const totalPages = Math.max(1, Math.ceil(filteredVendors.length / pageSize));
+  const paginatedVendors = filteredVendors.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
-  // ---------------------
-  // Create Product
-  // ---------------------
-  const handleCreateProduct = async (e: any) => {
+  // OPEN MODAL FOR CREATE
+  const openCreateModal = () => {
+    setIsEditMode(false);
+    setForm({
+      name: "",
+      companyName: "",
+      contactNumber: "",
+      email: "",
+      address: "",
+      sector: "MANUFACTURING",
+      gstNumber: "",
+    });
+    setError("");
+    setSuccess("");
+    setModalOpen(true);
+  };
+
+  // OPEN MODAL FOR EDIT
+  const openEditModal = (vendor: Vendor) => {
+    setIsEditMode(true);
+    setCurrentVendor(vendor);
+    setForm({
+      name: vendor.name || "",
+      companyName: vendor.companyName || "",
+      contactNumber: vendor.contactNumber || "",
+      email: vendor.email || "",
+      address: vendor.address || "",
+      sector: vendor.sector || "MANUFACTURING",
+      gstNumber: vendor.gstNumber || "",
+    });
+    setError("");
+    setSuccess("");
+    setModalOpen(true);
+  };
+
+  // CREATE or UPDATE vendor
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setSubmitting(true);
 
     try {
-      if (!form.name || !form.price || !form.image || !form.vendorId) {
-        throw new Error("All fields required including vendor and image");
-      }
+      // basic validation
+      if (!form.name.trim()) throw new Error("Vendor name is required");
+      if (!form.companyName.trim()) throw new Error("Company name is required");
+      // optional: validate GST format if needed
 
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Unauthorized");
 
-      const fd = new FormData();
-      fd.append("name", form.name);
-      fd.append("price", form.price);
-      fd.append("image", form.image);
-      fd.append("vendorId", form.vendorId);
+      const payload = {
+        name: form.name,
+        companyName: form.companyName,
+        contactNumber: form.contactNumber,
+        email: form.email,
+        address: form.address,
+        sector: form.sector,
+        gstNumber: form.gstNumber,
+      };
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
+      let res: Response;
+      if (isEditMode && currentVendor) {
+        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors/${currentVendor.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
-      if (!res.ok) throw new Error("Failed to create product");
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
 
-      setSuccess("Product created successfully");
-      setForm({ name: "", price: "", image: null, vendorId: "" });
-      fetchProducts(token);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to save vendor");
+      }
 
-      setTimeout(() => setModalOpen(false), 1200);
+      setSuccess(isEditMode ? "Vendor updated successfully" : "Vendor created successfully");
+      fetchVendors();
+      setTimeout(() => setModalOpen(false), 900);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // ---------------------
-  // Delete Product
-  // ---------------------
+  // DELETE VENDOR
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure?")) return;
+    if (!confirm("Are you sure you want to delete this vendor?")) return;
 
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error("Error deleting");
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
 
-      setProducts(products.filter((p) => p.id !== id));
-    } catch (err) {
-      alert("Delete failed");
+      if (!res.ok) throw new Error("Failed to delete vendor");
+      setVendors(vendors.filter((v) => v.id !== id));
+      setFilteredVendors(filteredVendors.filter((v) => v.id !== id));
+    } catch (err: any) {
+      alert(err.message || "Failed to delete vendor");
     }
   };
 
-  if (loading) return <p className="text-center mt-10 text-white">Loading...</p>;
+  // LOADING
+  if (loading) return <p className="text-center text-white mt-10">Loading vendors...</p>;
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      <Sidebar />
-
-      <main className="flex-1 p-8">
+    <div className="flex bg-gray-900 min-h-screen text-white">
+      {/* MAIN */}
+      <main className="flex-1 p-8 pl-64">
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Products Management</h1>
+          <h1 className="text-3xl font-bold">Vendors Management</h1>
 
-          {currentUser?.role === "ADMIN" && (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search vendors..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="bg-gray-800 text-white placeholder-gray-400"
+              />
+
+              <Select onValueChange={setSortOption} defaultValue="id-asc">
+                <SelectTrigger className="w-44 bg-gray-800 text-white">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 text-white">
+                  <SelectItem value="id-asc">ID ↑</SelectItem>
+                  <SelectItem value="id-desc">ID ↓</SelectItem>
+                  <SelectItem value="name-asc">Name A–Z</SelectItem>
+                  <SelectItem value="name-desc">Name Z–A</SelectItem>
+                  <SelectItem value="company-asc">Company A–Z</SelectItem>
+                  <SelectItem value="company-desc">Company Z–A</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700">
-                  + Add Product
+                <Button className="bg-green-600 hover:bg-green-700" onClick={openCreateModal}>
+                  + Create Vendor
                 </Button>
               </DialogTrigger>
 
               <DialogContent className="bg-gray-900 border-gray-700">
                 <DialogHeader>
-                  <DialogTitle>Add New Product</DialogTitle>
+                  <DialogTitle>{isEditMode ? "Edit Vendor" : "Create Vendor"}</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleCreateProduct} className="space-y-4 mt-4">
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                   <Input
-                    placeholder="Product Name"
-                    className="bg-gray-800 border-gray-700"
+                    placeholder="Primary contact name"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Price"
-                    type="number"
-                    className="bg-gray-800 border-gray-700"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
 
-                  {/* Vendor Dropdown */}
-                  {/* Vendor Dropdown */}
-<Select
-  value={form.vendorId}
-  onValueChange={(val) => {
-    if (val === "new") {
-      router.push("/vendors/new"); // redirect to create vendor page
-    } else {
-      setForm({ ...form, vendorId: val });
-    }
-  }}
->
-                <SelectTrigger className="w-full bg-gray-800 text-white">
-                    <SelectValue placeholder="Select Vendor" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 text-white">
-                    {vendors.length === 0 && (
-                    <SelectItem value="" disabled>
-                        No vendors available
-                    </SelectItem>
-                    )}
-                    {vendors.map((v) => (
-                    <SelectItem key={v.id} value={v.id.toString()}>
-                        {v.companyName || v.name}
-                    </SelectItem>
-                    ))}
-                    <SelectItem value="new">+ Add New Vendor</SelectItem>
-                </SelectContent>
-                </Select>
-
+                  <Input
+                    placeholder="Company name"
+                    value={form.companyName}
+                    onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
 
                   <Input
-                    type="file"
-                    accept="image/*"
-                    className="bg-gray-800 border-gray-700"
-                    onChange={(e) =>
-                      setForm({ ...form, image: e.target.files?.[0] || null })
-                    }
+                    placeholder="Contact no."
+                    value={form.contactNumber}
+                    onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+
+                  <Input
+                    placeholder="Email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+
+                  <Input
+                    placeholder="Address"
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+
+                  <Select
+                    value={form.sector}
+                    onValueChange={(sector) => setForm({ ...form, sector })}
+                  >
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectValue placeholder="Sector" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-900 text-white border-gray-700">
+                      <SelectItem value="MANUFACTURING">Manufacturing</SelectItem>
+                      <SelectItem value="IT">IT</SelectItem>
+                      <SelectItem value="SERVICES">Services</SelectItem>
+                      <SelectItem value="RETAIL">Retail</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    placeholder="GST Number"
+                    value={form.gstNumber}
+                    onChange={(e) => setForm({ ...form, gstNumber: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
                   />
 
                   {error && <p className="text-red-400">{error}</p>}
                   {success && <p className="text-green-400">{success}</p>}
 
                   <DialogFooter>
-                    <Button className="bg-blue-600 hover:bg-blue-700">Create</Button>
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled={submitting}
+                    >
+                      {submitting ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update" : "Create")}
+                    </Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
             </Dialog>
-          )}
+          </div>
         </div>
 
-        {/* SEARCH + SORT */}
-        <div className="flex items-center gap-4 mb-6">
-          <Input
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-gray-800 text-white w-64"
-          />
-
-          <Select onValueChange={setSortOption} defaultValue="id-asc">
-            <SelectTrigger className="w-48 bg-gray-800 text-white">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 text-white">
-              <SelectItem value="id-asc">ID ↑</SelectItem>
-              <SelectItem value="id-desc">ID ↓</SelectItem>
-              <SelectItem value="name-asc">Name A–Z</SelectItem>
-              <SelectItem value="name-desc">Name Z–A</SelectItem>
-              <SelectItem value="price-asc">Price ↑</SelectItem>
-              <SelectItem value="price-desc">Price ↓</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* TABLE */}
         <div className="rounded-lg bg-gray-800 p-4">
-          <Table>
+        <Table>
             <TableHeader>
-              <TableRow className="border-gray-700">
-                <TableHead>ID</TableHead>
-                <TableHead>Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
+            <TableRow className="border-gray-700">
+                <TableHead>Company</TableHead>
+                <TableHead>Sector</TableHead>
+                <TableHead className="text-center">Details</TableHead>
+            </TableRow>
             </TableHeader>
 
             <TableBody>
-              {paginated.map((p) => (
-                <TableRow key={p.id} className="border-gray-700">
-                  <TableCell>{p.id}</TableCell>
-                  <TableCell>
-                    <Image
-                      src={`${process.env.NEXT_PUBLIC_API_URL}/${p.image}`}
-                      alt="product"
-                      width={50}
-                      height={50}
-                      className="rounded"
-                    />
-                  </TableCell>
-                  <TableCell>{p.name}</TableCell>
-                  <TableCell>₹{p.price}</TableCell>
-                  <TableCell>{p.vendor?.companyName || p.vendor?.name || "-"}</TableCell>
-                  <TableCell className="text-center">
-                    {currentUser?.role === "ADMIN" && (
-                      <Button
-                        size="sm"
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => handleDelete(p.id)}
-                      >
-                        Delete
-                      </Button>
-                    )}
-                  </TableCell>
+            {paginatedVendors.map((v) => (
+                <>
+                {/* MAIN ROW */}
+                <TableRow
+                    key={v.id}
+                    className="border-gray-700 hover:bg-gray-700/40 cursor-pointer"
+                    onClick={() =>
+                    setCurrentVendor(currentVendor?.id === v.id ? null : v)
+                    }
+                >
+                    <TableCell className="text-white">{v.companyName}</TableCell>
+                    <TableCell className="text-white">{v.sector}</TableCell>
+                    <TableCell className="text-center">
+                    {currentVendor?.id === v.id ? "▲" : "▼"}
+                    </TableCell>
                 </TableRow>
-              ))}
 
-              {paginated.length === 0 && (
+                {/* DROPDOWN DETAILS */}
+                {currentVendor?.id === v.id && (
+                    <TableRow className="bg-gray-700/30 border-gray-700">
+                    <TableCell colSpan={3}>
+                        <div className="p-4 space-y-2 text-gray-300">
+                        <p><b>Name:</b> {v.name}</p>
+                        <p><b>Email:</b> {v.email}</p>
+                        <p><b>Contact:</b> {v.contactNumber}</p>
+                        <p><b>Address:</b> {v.address}</p>
+                        <p><b>GST:</b> {v.gstNumber}</p>
+
+                        <div className="flex gap-2 mt-3">
+                            <Button
+                            size="sm"
+                            className="bg-yellow-500 hover:bg-yellow-600"
+                            onClick={() => openEditModal(v)}
+                            >
+                            Edit
+                            </Button>
+
+                            <Button
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => handleDelete(v.id)}
+                            >
+                            Delete
+                            </Button>
+                        </div>
+                        </div>
+                    </TableCell>
+                    </TableRow>
+                )}
+                </>
+            ))}
+
+            {paginatedVendors.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-gray-400">
-                    No products found.
-                  </TableCell>
+                <TableCell colSpan={3} className="text-center py-4 text-gray-400">
+                    No vendors found.
+                </TableCell>
                 </TableRow>
-              )}
+            )}
             </TableBody>
-          </Table>
+        </Table>
 
-          {/* PAGINATION */}
-          <div className="flex justify-between items-center mt-6">
+        {/* PAGINATION */}
+        <div className="flex justify-between items-center mt-6">
             <Button
-              variant="outline"
-              className="border-gray-600 text-gray-900"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
+            variant="outline"
+            className="border-gray-600 text-gray-900"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             >
-              Previous
+            Previous
             </Button>
 
             <span className="text-gray-300">
-              Page {currentPage} of {totalPages}
+            Page {currentPage} of {totalPages}
             </span>
 
             <Button
-              variant="outline"
-              className="border-gray-600 text-gray-900"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
+            variant="outline"
+            className="border-gray-600 text-gray-900"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             >
-              Next
+            Next
             </Button>
-          </div>
         </div>
+        </div>
+
       </main>
     </div>
   );
