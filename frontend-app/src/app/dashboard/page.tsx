@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
-import { Store as StoreIcon, Package as ProductIcon } from "lucide-react";
+import { Store as StoreIcon, Package2 as ProductIcon } from "lucide-react";
 
 import {
   User as UserIcon,
