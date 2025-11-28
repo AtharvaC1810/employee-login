@@ -36,7 +36,7 @@ interface Vendor {
   id: number;
   name: string;
   companyName?: string;
-  contactNo?: string;
+  contactNumber?: string;
   email?: string;
   address?: string;
   sector?: string;
@@ -47,7 +47,7 @@ interface Vendor {
 interface VendorForm {
   name: string;
   companyName: string;
-  contactNo: string;
+  contactNumber: string;
   email: string;
   address: string;
   sector: string;
@@ -87,7 +87,7 @@ function VendorsContent() {
   const [form, setForm] = useState<VendorForm>({
     name: "",
     companyName: "",
-    contactNo: "",
+    contactNumber: "",
     email: "",
     address: "",
     sector: "MANUFACTURING",
@@ -149,7 +149,7 @@ function VendorsContent() {
 
     if (search.trim()) {
       updated = updated.filter((v) =>
-        `${v.name} ${v.companyName} ${v.email} ${v.contactNo} ${v.sector}`
+        `${v.name} ${v.companyName} ${v.email} ${v.contactNumber} ${v.sector}`
           .toLowerCase()
           .includes(search.toLowerCase())
       );
@@ -199,7 +199,7 @@ function VendorsContent() {
     setForm({
       name: "",
       companyName: "",
-      contactNo: "",
+      contactNumber: "",
       email: "",
       address: "",
       sector: "MANUFACTURING",
@@ -217,7 +217,7 @@ function VendorsContent() {
     setForm({
       name: vendor.name || "",
       companyName: vendor.companyName || "",
-      contactNo: vendor.contactNo || "",
+      contactNumber: vendor.contactNumber || "",
       email: vendor.email || "",
       address: vendor.address || "",
       sector: vendor.sector || "MANUFACTURING",
@@ -247,7 +247,7 @@ function VendorsContent() {
       const payload = {
         name: form.name,
         companyName: form.companyName,
-        contactNo: form.contactNo,
+        contactNumber: form.contactNumber,
         email: form.email,
         address: form.address,
         sector: form.sector,
@@ -391,8 +391,8 @@ function VendorsContent() {
 
                   <Input
                     placeholder="Contact no."
-                    value={form.contactNo}
-                    onChange={(e) => setForm({ ...form, contactNo: e.target.value })}
+                    value={form.contactNumber}
+                    onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
                     className="bg-gray-800 border-gray-700 text-white"
                   />
 
@@ -473,7 +473,7 @@ function VendorsContent() {
                   <TableCell className="text-white">{v.name}</TableCell>
                   <TableCell className="text-white">{v.companyName}</TableCell>
                   <TableCell className="text-white">{v.email}</TableCell>
-                  <TableCell className="text-white">{v.contactNo}</TableCell>
+                  <TableCell className="text-white">{v.contactNumber}</TableCell>
                   <TableCell className="text-white">{v.sector}</TableCell>
                   <TableCell className="flex justify-center gap-2">
                     <Button
