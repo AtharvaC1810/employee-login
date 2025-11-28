@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
+import { Store as StoreIcon } from "lucide-react";
+
 
 import {
   User as UserIcon,
@@ -69,6 +71,14 @@ export default function DashboardPage() {
       action: () => router.push("/users"),
       visible: role === "ADMIN",
       bg: "bg-gradient-to-r from-purple-600 via-pink-500 to-red-500",
+    },
+    {
+      title: "Vendor Management",
+      desc: "Manage vendor records and company details",
+      icon: <StoreIcon size={32} />,
+      action: () => router.push("/vendors"),
+      visible: role === "ADMIN",
+      bg: "bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800",
     },
     {
       title: "Role Management",

@@ -17,6 +17,9 @@ export default function Sidebar() {
   const menu = [
     { name: "Dashboard", path: "/dashboard" },
     { name: "Users", path: "/users" },
+    { name: "Vendors", path: "/vendors" },      
+      //{ name: "Products", path: "/products" },     
+      //{ name: "Orders", path: "/orders" },        
     { name: "Roles", path: "/roles" },
     { name: "Permissions", path: "/permissions" },
     { name: "Profile", path: "/profile" },
@@ -31,7 +34,7 @@ export default function Sidebar() {
         {menu.map((m) => (
           <button
             key={m.path}
-            onClick={() => router.push(m.path)} 
+            onClick={() => router.push(m.path)}
             className={cn(
               "block w-full text-left px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white",
               pathname === m.path && "bg-gray-800 text-white"
