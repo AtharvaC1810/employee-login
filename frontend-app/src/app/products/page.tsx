@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Sidebar from "@/components/Sidebar";
+import Image from "next/image";
 
 // shadcn imports
 import {
@@ -31,12 +32,17 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import Image from "next/image";
 
 interface Vendor {
   id: number;
   name: string;
-  companyName: string;
+  companyName?: string;
+  contactNumber?: string;
+  email?: string;
+  address?: string;
+  sector?: string;
+  gstNumber?: string;
+  status?: string;
 }
 
 interface Product {
@@ -46,6 +52,16 @@ interface Product {
   image: string;
   vendorId: number;
   vendorName?: string;
+}
+
+interface VendorForm {
+  name: string;
+  companyName: string;
+  contactNumber: string;
+  email: string;
+  address: string;
+  sector: string;
+  gstNumber: string;
 }
 
 export default function ProductsPage() {
@@ -73,8 +89,6 @@ function ProductsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -82,15 +96,22 @@ function ProductsContent() {
     vendorId: "",
   });
 
-  const [vendorForm, setVendorForm] = useState({
+  const [vendorForm, setVendorForm] = useState<VendorForm>({
     name: "",
     companyName: "",
+    contactNumber: "",
+    email: "",
+    address: "",
+    sector: "MANUFACTURING",
+    gstNumber: "",
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [vendorError, setVendorError] = useState("");
   const [vendorSuccess, setVendorSuccess] = useState("");
+
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // -----------------------------------------------------
   // Load user + fetch products + vendors
@@ -241,7 +262,15 @@ function ProductsContent() {
       if (!res.ok) throw new Error("Failed to create vendor");
       setVendorSuccess("Vendor created successfully");
       fetchVendors(token);
-      setVendorForm({ name: "", companyName: "" });
+      setVendorForm({
+        name: "",
+        companyName: "",
+        contactNumber: "",
+        email: "",
+        address: "",
+        sector: "MANUFACTURING",
+        gstNumber: "",
+      });
       setTimeout(() => setVendorModalOpen(false), 1000);
     } catch (err: any) {
       setVendorError(err.message);
@@ -354,19 +383,67 @@ function ProductsContent() {
 
                   <form onSubmit={handleCreateVendor} className="space-y-4 mt-4">
                     <Input
-                      placeholder="Vendor Name"
+                      placeholder="Primary contact name"
                       value={vendorForm.name}
                       onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-800 border-gray-700 text-white"
                     />
+
                     <Input
-                      placeholder="Company Name"
+                      placeholder="Company name"
                       value={vendorForm.companyName}
                       onChange={(e) =>
                         setVendorForm({ ...vendorForm, companyName: e.target.value })
                       }
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-800 border-gray-700 text-white"
                     />
+
+                    <Input
+                      placeholder="Contact no."
+                      value={vendorForm.contactNumber}
+                      onChange={(e) =>
+                        setVendorForm({ ...vendorForm, contactNumber: e.target.value })
+                      }
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+
+                    <Input
+                      placeholder="Email"
+                      value={vendorForm.email}
+                      onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+
+                    <Input
+                      placeholder="Address"
+                      value={vendorForm.address}
+                      onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+
+                    <Select
+                      value={vendorForm.sector}
+                      onValueChange={(sector) => setVendorForm({ ...vendorForm, sector })}
+                    >
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                        <SelectValue placeholder="Sector" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 text-white border-gray-700">
+                        <SelectItem value="MANUFACTURING">Manufacturing</SelectItem>
+                        <SelectItem value="IT">IT</SelectItem>
+                        <SelectItem value="SERVICES">Services</SelectItem>
+                        <SelectItem value="RETAIL">Retail</SelectItem>
+                        <SelectItem value="OTHER">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Input
+                      placeholder="GST Number"
+                      value={vendorForm.gstNumber}
+                      onChange={(e) => setVendorForm({ ...vendorForm, gstNumber: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+
                     {vendorError && <p className="text-red-400">{vendorError}</p>}
                     {vendorSuccess && <p className="text-green-400">{vendorSuccess}</p>}
 
@@ -380,32 +457,8 @@ function ProductsContent() {
           )}
         </div>
 
-        {/* SEARCH + SORT */}
-        <div className="flex items-center gap-4 mb-6">
-          <Input
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-gray-800 text-white w-64"
-          />
-
-          <Select onValueChange={setSortOption} defaultValue="id-asc">
-            <SelectTrigger className="w-48 bg-gray-800 text-white">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 text-white">
-              <SelectItem value="id-asc">ID ↑</SelectItem>
-              <SelectItem value="id-desc">ID ↓</SelectItem>
-              <SelectItem value="name-asc">Name A–Z</SelectItem>
-              <SelectItem value="name-desc">Name Z–A</SelectItem>
-              <SelectItem value="price-asc">Price ↑</SelectItem>
-              <SelectItem value="price-desc">Price ↓</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* TABLE */}
-        <div className="rounded-lg bg-gray-800 p-4">
+        {/* PRODUCTS TABLE */}
+        <div className="rounded-lg bg-gray-800 p-4 mt-4">
           <Table>
             <TableHeader>
               <TableRow className="border-gray-700">
@@ -447,6 +500,7 @@ function ProductsContent() {
                   </TableCell>
                 </TableRow>
               ))}
+
               {paginated.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-gray-400 py-4">
