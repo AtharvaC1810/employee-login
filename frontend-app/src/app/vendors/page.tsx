@@ -451,85 +451,105 @@ function VendorsContent() {
           </div>
         </div>
 
-        {/* TABLE */}
         <div className="rounded-lg bg-gray-800 p-4">
-          <Table>
+        <Table>
             <TableHeader>
-              <TableRow className="border-gray-700">
-                <TableHead>ID</TableHead>
-                <TableHead>Name</TableHead>
+            <TableRow className="border-gray-700">
                 <TableHead>Company</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Contact</TableHead>
                 <TableHead>Sector</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
+                <TableHead className="text-center">Details</TableHead>
+            </TableRow>
             </TableHeader>
 
             <TableBody>
-              {paginatedVendors.map((v) => (
-                <TableRow key={v.id} className="border-gray-700 hover:bg-gray-700/40">
-                  <TableCell className="text-white">{v.id}</TableCell>
-                  <TableCell className="text-white">{v.name}</TableCell>
-                  <TableCell className="text-white">{v.companyName}</TableCell>
-                  <TableCell className="text-white">{v.email}</TableCell>
-                  <TableCell className="text-white">{v.contactNumber}</TableCell>
-                  <TableCell className="text-white">{v.sector}</TableCell>
-                  <TableCell className="flex justify-center gap-2">
-                    <Button
-                      size="sm"
-                      className="bg-yellow-500 hover:bg-yellow-600"
-                      onClick={() => openEditModal(v)}
-                    >
-                      Edit
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={() => handleDelete(v.id)}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
+            {paginatedVendors.map((v) => (
+                <>
+                {/* MAIN ROW */}
+                <TableRow
+                    key={v.id}
+                    className="border-gray-700 hover:bg-gray-700/40 cursor-pointer"
+                    onClick={() =>
+                    setCurrentVendor(currentVendor?.id === v.id ? null : v)
+                    }
+                >
+                    <TableCell className="text-white">{v.companyName}</TableCell>
+                    <TableCell className="text-white">{v.sector}</TableCell>
+                    <TableCell className="text-center">
+                    {currentVendor?.id === v.id ? "▲" : "▼"}
+                    </TableCell>
                 </TableRow>
-              ))}
 
-              {paginatedVendors.length === 0 && (
+                {/* DROPDOWN DETAILS */}
+                {currentVendor?.id === v.id && (
+                    <TableRow className="bg-gray-700/30 border-gray-700">
+                    <TableCell colSpan={3}>
+                        <div className="p-4 space-y-2 text-gray-300">
+                        <p><b>Name:</b> {v.name}</p>
+                        <p><b>Email:</b> {v.email}</p>
+                        <p><b>Contact:</b> {v.contactNumber}</p>
+                        <p><b>Address:</b> {v.address}</p>
+                        <p><b>GST:</b> {v.gstNumber}</p>
+
+                        <div className="flex gap-2 mt-3">
+                            <Button
+                            size="sm"
+                            className="bg-yellow-500 hover:bg-yellow-600"
+                            onClick={() => openEditModal(v)}
+                            >
+                            Edit
+                            </Button>
+
+                            <Button
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => handleDelete(v.id)}
+                            >
+                            Delete
+                            </Button>
+                        </div>
+                        </div>
+                    </TableCell>
+                    </TableRow>
+                )}
+                </>
+            ))}
+
+            {paginatedVendors.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4 text-gray-400">
+                <TableCell colSpan={3} className="text-center py-4 text-gray-400">
                     No vendors found.
-                  </TableCell>
+                </TableCell>
                 </TableRow>
-              )}
+            )}
             </TableBody>
-          </Table>
+        </Table>
 
-          {/* PAGINATION */}
-          <div className="flex justify-between items-center mt-6">
+        {/* PAGINATION */}
+        <div className="flex justify-between items-center mt-6">
             <Button
-              variant="outline"
-              className="border-gray-600 text-gray-300"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            variant="outline"
+            className="border-gray-600 text-gray-900"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             >
-              Previous
+            Previous
             </Button>
 
             <span className="text-gray-300">
-              Page {currentPage} of {totalPages}
+            Page {currentPage} of {totalPages}
             </span>
 
             <Button
-              variant="outline"
-              className="border-gray-600 text-gray-300"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            variant="outline"
+            className="border-gray-600 text-gray-900"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             >
-              Next
+            Next
             </Button>
-          </div>
         </div>
+        </div>
+
       </main>
     </div>
   );
