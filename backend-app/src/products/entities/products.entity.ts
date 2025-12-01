@@ -9,13 +9,15 @@ export class Product {
   @Column()
   name: string;
 
-  @Column('decimal')
+  @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
+  // Image filename stored on server
   @Column({ nullable: true })
   image: string;
 
-  @ManyToOne(() => Vendor, (vendor) => vendor.products)
+  // Relation with Vendor
+  @ManyToOne(() => Vendor, (vendor) => vendor.products, { eager: true })
   @JoinColumn({ name: 'vendorId' })
   vendor: Vendor;
 

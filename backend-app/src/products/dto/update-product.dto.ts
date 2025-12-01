@@ -13,4 +13,8 @@ export class UpdateProductDto {
   @IsNumber()
   vendorId?: number;
 
+  // New: optional image field (string filename saved by Multer)
+  @IsOptional()
+  @IsString()
+  image?: string;
 }

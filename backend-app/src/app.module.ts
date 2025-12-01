@@ -11,31 +11,31 @@ import { join } from 'path';
 
 @Module({
   imports: [
-    // ✅ Global Config
+    // ✅ Global .env Support
     ConfigModule.forRoot({
       isGlobal: true,
     }),
 
-    // ✅ Serve Static Uploads Folder (correct usage)
+    // ✅ Static file serving for uploads/products
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'), // Physical folder
-      serveRoot: '/uploads', // URL base path
+      rootPath: join(__dirname, '..', 'uploads'), // maps folder
+      serveRoot: '/uploads', // URL prefix → http://localhost:3000/uploads/*
     }),
 
-    // ✅ TypeORM Database Configuration
+    // ✅ TypeORM Database Config
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const host = configService.get<string>('DB_HOST');
-        const port = Number(configService.get<number>('DB_PORT') || 5432);
-        const username = configService.get<string>('DB_USERNAME');
-        const password = configService.get<string>('DB_PASSWORD');
-        const database = configService.get<string>('DB_NAME');
+      useFactory: (config: ConfigService) => {
+        const host = config.get<string>('DB_HOST');
+        const port = Number(config.get<number>('DB_PORT') || 5432);
+        const username = config.get<string>('DB_USERNAME');
+        const password = config.get<string>('DB_PASSWORD');
+        const database = config.get<string>('DB_NAME');
 
         if (!host || !port || !username || !password || !database) {
           throw new Error(
-            'Database configuration is missing in .env or environment variables',
+            '❌ Missing database configuration variables in .env',
           );
         }
 
@@ -47,12 +47,12 @@ import { join } from 'path';
           password,
           database,
           autoLoadEntities: true,
-          synchronize: true,
+          synchronize: true, // ❗ optional — disable in production
         };
       },
     }),
 
-    // ✅ Modules
+    // ✅ Feature Modules
     UsersModule,
     AuthModule,
     PermissionsModule,

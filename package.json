@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/multer": "^2.0.0"
+  },
+  "dependencies": {
+    "@nestjs/serve-static": "^5.0.4",
+    "multer": "^2.0.2"
+  }
+}
