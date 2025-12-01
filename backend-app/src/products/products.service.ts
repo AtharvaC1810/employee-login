@@ -13,7 +13,6 @@ export class ProductResponseDto {
   price: number;
   vendorId: number;
   vendorName: string;
-  image?: string;
 }
 
 @Injectable()
@@ -37,7 +36,6 @@ export class ProductsService {
       price: p.price,
       vendorId: p.vendor.id,
       vendorName: p.vendor.companyName || p.vendor.name,
-      image: p.image ?? undefined,
     }));
   }
 
@@ -57,14 +55,13 @@ export class ProductsService {
       price: product.price,
       vendorId: product.vendor.id,
       vendorName: product.vendor.companyName || product.vendor.name,
-      image: product.image ?? undefined,
     };
   }
 
   // ----------------------------
   // Create product
   // ----------------------------
-  async create(dto: CreateProductDto, image?: string): Promise<ProductResponseDto> {
+  async create(dto: CreateProductDto): Promise<ProductResponseDto> {
     const vendor = await this.vendorRepository.findOne({ where: { id: dto.vendorId } });
     if (!vendor) throw new NotFoundException('Vendor not found');
 
@@ -72,7 +69,6 @@ export class ProductsService {
       name: dto.name,
       price: dto.price,
       vendor,
-      image: image ?? undefined,
     });
 
     const saved = await this.productRepository.save(product);
@@ -83,14 +79,13 @@ export class ProductsService {
       price: saved.price,
       vendorId: saved.vendor.id,
       vendorName: saved.vendor.companyName || saved.vendor.name,
-      image: saved.image ?? undefined,
     };
   }
 
   // ----------------------------
   // Update product
   // ----------------------------
-  async update(id: number, dto: UpdateProductDto, image?: string): Promise<ProductResponseDto> {
+  async update(id: number, dto: UpdateProductDto): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: ['vendor'],
@@ -104,7 +99,6 @@ export class ProductsService {
       if (!vendor) throw new NotFoundException('Vendor not found');
       product.vendor = vendor;
     }
-    if (image !== undefined) product.image = image;
 
     const saved = await this.productRepository.save(product);
 
@@ -114,7 +108,6 @@ export class ProductsService {
       price: saved.price,
       vendorId: saved.vendor.id,
       vendorName: saved.vendor.companyName || saved.vendor.name,
-      image: saved.image ?? undefined,
     };
   }
 

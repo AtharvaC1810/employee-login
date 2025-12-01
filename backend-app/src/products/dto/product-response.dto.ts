@@ -4,6 +4,5 @@ export class ProductResponseDto {
   name: string;
   price: number;
   vendorId: number;
-  vendorName: string; // calculated from relation
-  image: string;
+  vendorName: string;
 }
