@@ -1,31 +1,40 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('vendors')
 export class Vendor {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ length: 100 })
   name: string;
 
-  @Column()
+  @Column({ length: 150 })
   companyName: string;
 
-  @Column({ unique: true })
-  email: string;
-
-  @Column()
+  @Column({ length: 50, nullable: true })
   contactNumber: string;
 
-  @Column({ type: 'text' })
+  @Column({ length: 150, nullable: true })
+  email: string; // removed unique constraint
+
+  @Column({ type: 'text', nullable: true })
   address: string;
 
-  @Column()
+  @Column({ length: 50 })
   sector: string;
 
-  @Column({ unique: true })
-  gstNumber: string;
+  @Column({ length: 30, nullable: true })
+  gstNumber: string; // removed unique constraint
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

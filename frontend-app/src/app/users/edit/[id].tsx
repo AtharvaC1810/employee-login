@@ -6,9 +6,11 @@ import { useRouter, useParams } from "next/navigation";
 export default function EditUserPage() {
   const router = useRouter();
   const params = useParams();
-  const userId = params?.id;
+  const userId = Number(params?.id); // FIX: convert once
 
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -17,31 +19,40 @@ export default function EditUserPage() {
     role: "INTERN",
   });
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
+  // ----------------------------------------------------
+  // LOAD LOGGED IN USER
+  // ----------------------------------------------------
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) setCurrentUser(JSON.parse(userData));
+    const data = localStorage.getItem("user");
+    if (data) setCurrentUser(JSON.parse(data));
   }, []);
 
+  // ----------------------------------------------------
+  // FETCH USER TO EDIT
+  // ----------------------------------------------------
   useEffect(() => {
     async function fetchUser() {
       try {
         if (!userId) return;
 
         const token = localStorage.getItem("token");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
 
-        if (!res.ok) throw new Error("Failed to fetch user");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || "Failed to fetch user");
+        }
 
         const data = await res.json();
+
         setForm({
           name: data.name,
           email: data.email,
-          password: "", 
+          password: "",
           role: data.role,
         });
       } catch (err: any) {
@@ -51,13 +62,19 @@ export default function EditUserPage() {
       }
     }
 
-    if (userId) fetchUser();
+    fetchUser();
   }, [userId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // ----------------------------------------------------
+  // FORM CHANGE HANDLER
+  // ----------------------------------------------------
+  const handleChange = (e: any) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // ----------------------------------------------------
+  // SUBMIT HANDLER
+  // ----------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -66,26 +83,42 @@ export default function EditUserPage() {
     try {
       const token = localStorage.getItem("token");
 
-      const payload = { ...form };
-      if (!payload.password) delete payload.password;
+      let payload: any = {
+        name: form.name,
+        email: form.email,
+      };
 
-      if (currentUser?.role !== "ADMIN") {
-        delete payload.role;
+      // Only include password if user typed something meaningful
+      if (form.password.trim().length > 0) {
+        payload.password = form.password.trim();
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      // Only admins can update roles
+      if (currentUser?.role === "ADMIN") {
+        payload.role = form.role;
+      }
 
-      if (!res.ok) throw new Error("Failed to update user");
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      if (currentUser?.id === Number(userId)) {
-        localStorage.setItem("user", JSON.stringify({ ...currentUser, ...payload }));
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to update user");
+      }
+
+      // Update local storage if editing self
+      if (currentUser?.id === userId) {
+        const updatedUser = { ...currentUser, ...payload };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       }
 
       router.push("/users");
@@ -96,7 +129,11 @@ export default function EditUserPage() {
     }
   };
 
-  if (loading) return <div className="text-white text-center mt-10">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="text-white text-center mt-10">Loading...</div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-900 min-h-screen text-white">
@@ -105,6 +142,7 @@ export default function EditUserPage() {
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+
         <input
           type="text"
           name="name"
@@ -128,13 +166,13 @@ export default function EditUserPage() {
         <input
           type="password"
           name="password"
-          placeholder="New Password (leave blank to keep current)"
+          placeholder="New Password (optional)"
           value={form.password}
           onChange={handleChange}
           className="w-full p-2 rounded bg-gray-800 text-white"
         />
 
-        {/* Only show role select to admins */}
+        {/* Only Admin can change user roles */}
         {currentUser?.role === "ADMIN" && (
           <select
             name="role"
@@ -156,6 +194,7 @@ export default function EditUserPage() {
           >
             {loading ? "Updating..." : "Update User"}
           </button>
+
           <button
             type="button"
             onClick={() => router.push("/users")}
