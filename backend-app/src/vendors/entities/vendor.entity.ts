@@ -13,7 +13,7 @@ export class Vendor {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 100 })
+  @Column({ length: 100, default: 'Unknown Vendor' })
   name: string;
 
   @Column({ length: 150 })
@@ -40,9 +40,6 @@ export class Vendor {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // ------------------------
-  // Inverse relation to Product
-  // ------------------------
   @OneToMany(() => Product, (product) => product.vendor)
   products: Product[];
 }
