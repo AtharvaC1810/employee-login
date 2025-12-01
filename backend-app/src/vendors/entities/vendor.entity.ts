@@ -16,7 +16,7 @@ export class Vendor {
   @Column({ length: 100, default: 'Unknown Vendor' })
   name: string;
 
-  @Column({ length: 150, default: 'Unknown Company' })
+  @Column({ length: 150})
   companyName: string;
 
   @Column({ length: 50, nullable: true })
