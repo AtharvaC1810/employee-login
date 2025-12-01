@@ -47,10 +47,13 @@ interface Product {
   name: string;
   price: number;
   vendorId: number;
-  vendorName: string; // FIXED
+  vendorName: string;
   image: string;
 }
 
+// -----------------------------
+// MAIN COMPONENT
+// -----------------------------
 export default function ProductsPage() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN", "ENGINEER", "INTERN"]}>
@@ -111,52 +114,47 @@ function ProductsContent() {
     loadData(token);
   }, []);
 
+  // ----------------------------
+  // LOAD VENDORS + PRODUCTS
+  // ----------------------------
   const loadData = async (token: string) => {
     try {
-      await fetchVendors(token); // fetch vendors first
-      await fetchProducts(token); // then fetch products
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ----------------------------
-  // FETCH VENDORS
-  // ----------------------------
-  const fetchVendors = async (token: string) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
+      // Fetch vendors
+      const vendorRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data: Vendor[] = await res.json();
-      setVendors(data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
+      if (!vendorRes.ok) throw new Error("Failed to fetch vendors");
+      const vendorData: Vendor[] = await vendorRes.json();
+      setVendors(vendorData);
 
-  // ----------------------------
-  // FETCH PRODUCTS
-  // ----------------------------
-  const fetchProducts = async (token: string) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data: Product[] = await res.json();
-
+      // Create vendor map
       const vendorMap: Record<number, string> = {};
-      vendors.forEach((v) => (vendorMap[v.id] = v.companyName || v.name));
+      vendorData.forEach((v) => {
+        vendorMap[v.id] = v.companyName || v.name;
+      });
 
-      const updated = data.map((p: Product) => ({
+      // Fetch products
+      const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!productRes.ok) throw new Error("Failed to fetch products");
+      const productData = await productRes.json();
+
+      const productsArray: Product[] = Array.isArray(productData)
+        ? productData
+        : productData.products;
+
+      const updatedProducts = productsArray.map((p: Product) => ({
         ...p,
         vendorName: vendorMap[p.vendorId] || "Unknown",
       }));
 
-      setProducts(updated);
-      setFiltered(updated);
+      setProducts(updatedProducts);
+      setFiltered(updatedProducts);
     } catch (err) {
-      console.log(err);
+      console.error("Load data error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -194,7 +192,7 @@ function ProductsContent() {
       setSuccess("Product created successfully");
       setForm({ name: "", price: "", vendorId: "", image: null });
 
-      await fetchProducts(token!);
+      await loadData(token);
       setTimeout(() => setModalOpen(false), 800);
     } catch (err: any) {
       setError(err.message);
@@ -229,7 +227,7 @@ function ProductsContent() {
       setVendorSuccess("Vendor created");
       setVendorForm({ name: "", companyName: "" });
 
-      await fetchVendors(token!);
+      await loadData(token);
       setTimeout(() => setVendorModalOpen(false), 800);
     } catch (err: any) {
       setVendorError(err.message);
@@ -262,9 +260,7 @@ function ProductsContent() {
     let updated = [...products];
     if (search.trim()) {
       updated = updated.filter((p) =>
-        `${p.name} ${p.price} ${p.vendorName}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
+        `${p.name} ${p.price} ${p.vendorName}`.toLowerCase().includes(search.toLowerCase())
       );
     }
     updated = sortProducts(updated);
@@ -289,22 +285,17 @@ function ProductsContent() {
   // PAGINATION
   // ----------------------------
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginated = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // ----------------------------
   // RENDER
   // ----------------------------
-  if (loading)
-    return <p className="text-center mt-10 text-white">Loading...</p>;
+  if (loading) return <p className="text-center mt-10 text-white">Loading...</p>;
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
       <Sidebar />
       <main className="flex-1 p-8 pl-64">
-
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Products Management</h1>
@@ -314,9 +305,7 @@ function ProductsContent() {
               {/* CREATE PRODUCT BUTTON + MODAL */}
               <Dialog open={modalOpen} onOpenChange={setModalOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    + Add Product
-                  </Button>
+                  <Button className="bg-green-600 hover:bg-green-700">+ Add Product</Button>
                 </DialogTrigger>
 
                 <DialogContent className="bg-gray-900 border-gray-700">
@@ -325,14 +314,11 @@ function ProductsContent() {
                   </DialogHeader>
 
                   <form onSubmit={handleCreateProduct} className="space-y-4">
-
                     <Input
                       placeholder="Name"
                       className="bg-gray-800 border-gray-700"
                       value={form.name}
-                      onChange={(e) =>
-                        setForm({ ...form, name: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
                     />
 
                     <Input
@@ -340,9 +326,7 @@ function ProductsContent() {
                       type="number"
                       className="bg-gray-800 border-gray-700"
                       value={form.price}
-                      onChange={(e) =>
-                        setForm({ ...form, price: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, price: e.target.value })}
                     />
 
                     <Input
@@ -350,10 +334,7 @@ function ProductsContent() {
                       accept="image/*"
                       className="bg-gray-800 border-gray-700"
                       onChange={(e) =>
-                        setForm({
-                          ...form,
-                          image: e.target.files?.[0] || null,
-                        })
+                        setForm({ ...form, image: e.target.files?.[0] || null })
                       }
                     />
 
@@ -374,7 +355,6 @@ function ProductsContent() {
                             {v.companyName || v.name}
                           </SelectItem>
                         ))}
-
                         <SelectItem value="new">+ Add Vendor</SelectItem>
                       </SelectContent>
                     </Select>
@@ -383,9 +363,7 @@ function ProductsContent() {
                     {success && <p className="text-green-400">{success}</p>}
 
                     <DialogFooter>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        Create
-                      </Button>
+                      <Button className="bg-blue-600 hover:bg-blue-700">Create</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -413,24 +391,15 @@ function ProductsContent() {
                       className="bg-gray-800 border-gray-700"
                       value={vendorForm.companyName}
                       onChange={(e) =>
-                        setVendorForm({
-                          ...vendorForm,
-                          companyName: e.target.value,
-                        })
+                        setVendorForm({ ...vendorForm, companyName: e.target.value })
                       }
                     />
 
-                    {vendorError && (
-                      <p className="text-red-400">{vendorError}</p>
-                    )}
-                    {vendorSuccess && (
-                      <p className="text-green-400">{vendorSuccess}</p>
-                    )}
+                    {vendorError && <p className="text-red-400">{vendorError}</p>}
+                    {vendorSuccess && <p className="text-green-400">{vendorSuccess}</p>}
 
                     <DialogFooter>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        Create Vendor
-                      </Button>
+                      <Button className="bg-blue-600 hover:bg-blue-700">Create Vendor</Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -483,13 +452,15 @@ function ProductsContent() {
                   <TableCell>{p.id}</TableCell>
 
                   <TableCell>
-                    <Image
-                      src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${p.image}`}
-                      alt="product"
-                      width={50}
-                      height={50}
-                      className="rounded"
-                    />
+                    {p.image && (
+                      <Image
+                        src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${p.image}`}
+                        alt="product"
+                        width={50}
+                        height={50}
+                        className="rounded"
+                      />
+                    )}
                   </TableCell>
 
                   <TableCell>{p.name}</TableCell>
@@ -512,10 +483,7 @@ function ProductsContent() {
 
               {paginated.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-gray-400 py-4"
-                  >
+                  <TableCell colSpan={6} className="text-center text-gray-400 py-4">
                     No products found.
                   </TableCell>
                 </TableRow>
