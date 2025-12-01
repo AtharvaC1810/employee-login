@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -48,7 +46,7 @@ interface Product {
   name: string;
   price: number;
   vendorId: number;
-  image: string;
+  image?: string | null;
   vendorName: string;
 }
 
@@ -127,6 +125,8 @@ function ProductsContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      if (!res.ok) throw new Error("Failed to fetch vendors");
+
       const data: Vendor[] = await res.json();
       setVendors(data);
     } catch (err) {
@@ -143,7 +143,9 @@ function ProductsContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json();
+      if (!res.ok) throw new Error("Failed to fetch products");
+
+      const data: Product[] = await res.json();
 
       // Map vendor names
       const vendorMap: Record<number, string> = {};
@@ -151,9 +153,10 @@ function ProductsContent() {
         vendorMap[v.id] = v.companyName || v.name;
       });
 
-      const updatedProducts = data.map((p: Product) => ({
+      const updatedProducts: Product[] = data.map((p: any) => ({
         ...p,
         vendorName: vendorMap[p.vendorId] || "Unknown",
+        image: p.image || null,
       }));
 
       const sorted = sortProducts(updatedProducts);
@@ -241,7 +244,7 @@ function ProductsContent() {
       fd.append("name", form.name);
       fd.append("price", form.price);
       fd.append("vendorId", form.vendorId);
-      fd.append("image", form.image);
+      if (form.image) fd.append("image", form.image);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: "POST",
@@ -249,7 +252,7 @@ function ProductsContent() {
         body: fd,
       });
 
-      if (!res.ok) throw new Error("Failed to create");
+      if (!res.ok) throw new Error("Failed to create product");
 
       setSuccess("Product created");
       setForm({ name: "", price: "", vendorId: "", image: null });
@@ -308,10 +311,12 @@ function ProductsContent() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!res.ok) throw new Error("Delete failed");
 
       setProducts(products.filter((p) => p.id !== id));
     } catch {
