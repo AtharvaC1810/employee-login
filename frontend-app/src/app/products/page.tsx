@@ -93,14 +93,15 @@ function ProductsContent() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const [vendorError, setVendorError] = useState("");
   const [vendorSuccess, setVendorSuccess] = useState("");
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // ----------------------------
+  // ---------------------------------
   // INITIAL LOAD
-  // ----------------------------
+  // ---------------------------------
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
@@ -111,72 +112,131 @@ function ProductsContent() {
     }
 
     setCurrentUser(JSON.parse(user));
-    loadData(token);
+    fetchProducts(token);
+    fetchVendors(token);
   }, []);
 
-  // ----------------------------
-  // LOAD VENDORS + PRODUCTS
-  // ----------------------------
-  const loadData = async (token: string) => {
+  // ---------------------------------
+  // FETCH PRODUCTS
+  // ---------------------------------
+  const fetchProducts = async (token: string) => {
     try {
-      // Fetch vendors
-      const vendorRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!vendorRes.ok) throw new Error("Failed to fetch vendors");
-      const vendorData: Vendor[] = await vendorRes.json();
-      setVendors(vendorData);
 
-      // Create vendor map
+      const data = await res.json();
+
+      // FIX vendorName: match vendorId with vendors table
       const vendorMap: Record<number, string> = {};
-      vendorData.forEach((v) => {
-        vendorMap[v.id] = v.companyName || v.name;
-      });
-
-      // Fetch products
-      const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!productRes.ok) throw new Error("Failed to fetch products");
-      const productData = await productRes.json();
-
-      const productsArray: Product[] = Array.isArray(productData)
-        ? productData
-        : productData.products;
+      vendors.forEach((v) => (vendorMap[v.id] = v.companyName || v.name));
 
       const updatedProducts = productsArray.map((p: Product) => ({
         ...p,
         vendorName: vendorMap[p.vendorId] || "Unknown",
       }));
 
-      setProducts(updatedProducts);
-      setFiltered(updatedProducts);
+      setProducts(updated);
+      setFiltered(updated);
     } catch (err) {
-      console.error("Load data error:", err);
+      console.log(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ----------------------------
+  // ---------------------------------
+  // FETCH VENDORS
+  // ---------------------------------
+  const fetchVendors = async (token: string) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data: Vendor[] = await res.json();
+      setVendors(data);
+    } catch (err) {
+      console.log(err);
+    }
+
+    updated = sortProducts(updated);
+    setFiltered(updated);
+    setCurrentPage(1);
+  }, [search, sortOption, products]);
+
+  const sortProducts = (list: Product[]) => {
+    const sorted = [...list];
+    switch (sortOption) {
+      case "id-asc": sorted.sort((a, b) => a.id - b.id); break;
+      case "id-desc": sorted.sort((a, b) => b.id - a.id); break;
+      case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case "name-desc": sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
+      case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
+      case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
+    }
+    return sorted;
+  };
+
+  // ---------------------------------
+  // SEARCH + SORT
+  // ---------------------------------
+  useEffect(() => {
+    let updated = [...products];
+
+    if (search.trim()) {
+      updated = updated.filter((p) =>
+        `${p.name} ${p.price} ${p.vendorName}`
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    }
+
+    updated = sortProducts(updated);
+    setFiltered(updated);
+    setCurrentPage(1);
+  }, [search, sortOption, products]);
+
+  const sortProducts = (list: Product[]) => {
+    const sorted = [...list];
+    switch (sortOption) {
+      case "id-asc": sorted.sort((a, b) => a.id - b.id); break;
+      case "id-desc": sorted.sort((a, b) => b.id - a.id); break;
+      case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case "name-desc": sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
+      case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
+      case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
+    }
+    return sorted;
+  };
+
+  // ---------------------------------
+  // PAGINATION
+  // ---------------------------------
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // ---------------------------------
   // CREATE PRODUCT
-  // ----------------------------
+  // ---------------------------------
   const handleCreateProduct = async (e: any) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
     try {
-      if (!form.name || !form.price || !form.vendorId)
-        throw new Error("Name, price, and vendor are required");
+      if (!form.name || !form.price || !form.vendorId || !form.image)
+        throw new Error("All fields required");
 
       const token = localStorage.getItem("token");
 
       const fd = new FormData();
       fd.append("name", form.name);
-      fd.append("price", Number(form.price).toString());
-      fd.append("vendorId", Number(form.vendorId).toString());
-      if (form.image) fd.append("image", form.image);
+      fd.append("price", form.price);
+      fd.append("vendorId", form.vendorId);
+      fd.append("image", form.image);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: "POST",
@@ -184,24 +244,22 @@ function ProductsContent() {
         body: fd,
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Failed to create product");
-      }
+      if (!res.ok) throw new Error("Failed to create");
 
-      setSuccess("Product created successfully");
+      setSuccess("Product created");
       setForm({ name: "", price: "", vendorId: "", image: null });
 
-      await loadData(token);
+      await fetchProducts(token!);
+
       setTimeout(() => setModalOpen(false), 800);
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  // ----------------------------
+  // ---------------------------------
   // CREATE VENDOR
-  // ----------------------------
+  // ---------------------------------
   const handleCreateVendor = async (e: any) => {
     e.preventDefault();
     setVendorError("");
@@ -226,17 +284,16 @@ function ProductsContent() {
 
       setVendorSuccess("Vendor created");
       setVendorForm({ name: "", companyName: "" });
-
-      await loadData(token);
+      await fetchVendors(token!);
       setTimeout(() => setVendorModalOpen(false), 800);
     } catch (err: any) {
       setVendorError(err.message);
     }
   };
 
-  // ----------------------------
+  // ---------------------------------
   // DELETE PRODUCT
-  // ----------------------------
+  // ---------------------------------
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure?")) return;
 
@@ -253,44 +310,11 @@ function ProductsContent() {
     }
   };
 
-  // ----------------------------
-  // SEARCH + SORT
-  // ----------------------------
-  useEffect(() => {
-    let updated = [...products];
-    if (search.trim()) {
-      updated = updated.filter((p) =>
-        `${p.name} ${p.price} ${p.vendorName}`.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-    updated = sortProducts(updated);
-    setFiltered(updated);
-    setCurrentPage(1);
-  }, [search, sortOption, products]);
-
-  const sortProducts = (list: Product[]) => {
-    const sorted = [...list];
-    switch (sortOption) {
-      case "id-asc": sorted.sort((a, b) => a.id - b.id); break;
-      case "id-desc": sorted.sort((a, b) => b.id - a.id); break;
-      case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case "name-desc": sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
-      case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
-      case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
-    }
-    return sorted;
-  };
-
-  // ----------------------------
-  // PAGINATION
-  // ----------------------------
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  // ----------------------------
+  // ---------------------------------
   // RENDER
-  // ----------------------------
-  if (loading) return <p className="text-center mt-10 text-white">Loading...</p>;
+  // ---------------------------------
+  if (loading)
+    return <p className="text-center mt-10 text-white">Loading...</p>;
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
