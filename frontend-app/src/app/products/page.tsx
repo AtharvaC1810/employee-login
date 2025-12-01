@@ -6,7 +6,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Sidebar from "@/components/Sidebar";
 import Image from "next/image";
 
-// shadcn imports
+// UI Imports
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import {
   TableHead,
   TableHeader,
 } from "@/components/ui/table";
+
 import {
   Select,
   SelectTrigger,
@@ -47,8 +48,8 @@ interface Product {
   name: string;
   price: number;
   vendorId: number;
-  vendorName: string;
   image: string;
+  vendorName: string;
 }
 
 // -----------------------------
@@ -93,14 +94,15 @@ function ProductsContent() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const [vendorError, setVendorError] = useState("");
   const [vendorSuccess, setVendorSuccess] = useState("");
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // ----------------------------
+  // ---------------------------------
   // INITIAL LOAD
-  // ----------------------------
+  // ---------------------------------
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
@@ -111,72 +113,135 @@ function ProductsContent() {
     }
 
     setCurrentUser(JSON.parse(user));
-    loadData(token);
+
+    // Load vendors first → avoids vendorName mismatch
+    fetchVendors(token).then(() => fetchProducts(token));
   }, []);
 
-  // ----------------------------
-  // LOAD VENDORS + PRODUCTS
-  // ----------------------------
-  const loadData = async (token: string) => {
+  // ---------------------------------
+  // FETCH VENDORS
+  // ---------------------------------
+  const fetchVendors = async (token: string) => {
     try {
-      // Fetch vendors
-      const vendorRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!vendorRes.ok) throw new Error("Failed to fetch vendors");
-      const vendorData: Vendor[] = await vendorRes.json();
-      setVendors(vendorData);
 
-      // Create vendor map
+      const data: Vendor[] = await res.json();
+      setVendors(data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // ---------------------------------
+  // FETCH PRODUCTS
+  // ---------------------------------
+  const fetchProducts = async (token: string) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      // Map vendor names
       const vendorMap: Record<number, string> = {};
-      vendorData.forEach((v) => {
+      vendors.forEach((v) => {
         vendorMap[v.id] = v.companyName || v.name;
       });
 
-      // Fetch products
-      const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!productRes.ok) throw new Error("Failed to fetch products");
-      const productData = await productRes.json();
-
-      const productsArray: Product[] = Array.isArray(productData)
-        ? productData
-        : productData.products;
-
-      const updatedProducts = productsArray.map((p: Product) => ({
+      const updatedProducts = data.map((p: Product) => ({
         ...p,
         vendorName: vendorMap[p.vendorId] || "Unknown",
       }));
 
-      setProducts(updatedProducts);
-      setFiltered(updatedProducts);
+      const sorted = sortProducts(updatedProducts);
+
+      setProducts(sorted);
+      setFiltered(sorted);
     } catch (err) {
-      console.error("Load data error:", err);
+      console.log(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ----------------------------
+  // ---------------------------------
+  // SORT FUNCTION
+  // ---------------------------------
+  const sortProducts = (list: Product[]) => {
+    const sorted = [...list];
+    switch (sortOption) {
+      case "id-asc":
+        sorted.sort((a, b) => a.id - b.id);
+        break;
+      case "id-desc":
+        sorted.sort((a, b) => b.id - a.id);
+        break;
+      case "name-asc":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-desc":
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "price-asc":
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+    }
+    return sorted;
+  };
+
+  // ---------------------------------
+  // SEARCH + SORT
+  // ---------------------------------
+  useEffect(() => {
+    let updated = [...products];
+
+    if (search.trim()) {
+      updated = updated.filter((p) =>
+        `${p.name} ${p.price} ${p.vendorName}`
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    }
+
+    updated = sortProducts(updated);
+    setFiltered(updated);
+    setCurrentPage(1);
+  }, [search, sortOption, products]);
+
+  // ---------------------------------
+  // PAGINATION
+  // ---------------------------------
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // ---------------------------------
   // CREATE PRODUCT
-  // ----------------------------
+  // ---------------------------------
   const handleCreateProduct = async (e: any) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
     try {
-      if (!form.name || !form.price || !form.vendorId)
-        throw new Error("Name, price, and vendor are required");
+      if (!form.name || !form.price || !form.vendorId || !form.image)
+        throw new Error("All fields required");
 
       const token = localStorage.getItem("token");
 
       const fd = new FormData();
       fd.append("name", form.name);
-      fd.append("price", Number(form.price).toString());
-      fd.append("vendorId", Number(form.vendorId).toString());
-      if (form.image) fd.append("image", form.image);
+      fd.append("price", form.price);
+      fd.append("vendorId", form.vendorId);
+      fd.append("image", form.image);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: "POST",
@@ -184,24 +249,23 @@ function ProductsContent() {
         body: fd,
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Failed to create product");
-      }
+      if (!res.ok) throw new Error("Failed to create");
 
-      setSuccess("Product created successfully");
+      setSuccess("Product created");
       setForm({ name: "", price: "", vendorId: "", image: null });
 
-      await loadData(token);
+      await fetchVendors(token!);
+      await fetchProducts(token!);
+
       setTimeout(() => setModalOpen(false), 800);
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  // ----------------------------
+  // ---------------------------------
   // CREATE VENDOR
-  // ----------------------------
+  // ---------------------------------
   const handleCreateVendor = async (e: any) => {
     e.preventDefault();
     setVendorError("");
@@ -227,21 +291,23 @@ function ProductsContent() {
       setVendorSuccess("Vendor created");
       setVendorForm({ name: "", companyName: "" });
 
-      await loadData(token);
+      await fetchVendors(token!);
+
       setTimeout(() => setVendorModalOpen(false), 800);
     } catch (err: any) {
       setVendorError(err.message);
     }
   };
 
-  // ----------------------------
+  // ---------------------------------
   // DELETE PRODUCT
-  // ----------------------------
+  // ---------------------------------
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure?")) return;
 
     try {
       const token = localStorage.getItem("token");
+
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -253,44 +319,11 @@ function ProductsContent() {
     }
   };
 
-  // ----------------------------
-  // SEARCH + SORT
-  // ----------------------------
-  useEffect(() => {
-    let updated = [...products];
-    if (search.trim()) {
-      updated = updated.filter((p) =>
-        `${p.name} ${p.price} ${p.vendorName}`.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-    updated = sortProducts(updated);
-    setFiltered(updated);
-    setCurrentPage(1);
-  }, [search, sortOption, products]);
-
-  const sortProducts = (list: Product[]) => {
-    const sorted = [...list];
-    switch (sortOption) {
-      case "id-asc": sorted.sort((a, b) => a.id - b.id); break;
-      case "id-desc": sorted.sort((a, b) => b.id - a.id); break;
-      case "name-asc": sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case "name-desc": sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
-      case "price-asc": sorted.sort((a, b) => a.price - b.price); break;
-      case "price-desc": sorted.sort((a, b) => b.price - a.price); break;
-    }
-    return sorted;
-  };
-
-  // ----------------------------
-  // PAGINATION
-  // ----------------------------
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  // ----------------------------
+  // ---------------------------------
   // RENDER
-  // ----------------------------
-  if (loading) return <p className="text-center mt-10 text-white">Loading...</p>;
+  // ---------------------------------
+  if (loading)
+    return <p className="text-center mt-10 text-white">Loading...</p>;
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
@@ -302,10 +335,12 @@ function ProductsContent() {
 
           {currentUser?.role === "ADMIN" && (
             <>
-              {/* CREATE PRODUCT BUTTON + MODAL */}
+              {/* ADD PRODUCT MODAL */}
               <Dialog open={modalOpen} onOpenChange={setModalOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-green-600 hover:bg-green-700">+ Add Product</Button>
+                  <Button className="bg-green-600 hover:bg-green-700">
+                    + Add Product
+                  </Button>
                 </DialogTrigger>
 
                 <DialogContent className="bg-gray-900 border-gray-700">
@@ -318,7 +353,9 @@ function ProductsContent() {
                       placeholder="Name"
                       className="bg-gray-800 border-gray-700"
                       value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
                     />
 
                     <Input
@@ -326,7 +363,9 @@ function ProductsContent() {
                       type="number"
                       className="bg-gray-800 border-gray-700"
                       value={form.price}
-                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, price: e.target.value })
+                      }
                     />
 
                     <Input
@@ -334,7 +373,10 @@ function ProductsContent() {
                       accept="image/*"
                       className="bg-gray-800 border-gray-700"
                       onChange={(e) =>
-                        setForm({ ...form, image: e.target.files?.[0] || null })
+                        setForm({
+                          ...form,
+                          image: e.target.files?.[0] || null,
+                        })
                       }
                     />
 
@@ -349,9 +391,12 @@ function ProductsContent() {
                         <SelectValue placeholder="Select Vendor" />
                       </SelectTrigger>
 
-                      <SelectContent className="bg-gray-800">
+                      <SelectContent className="bg-gray-800 border-gray-700">
                         {vendors.map((v) => (
-                          <SelectItem key={v.id} value={v.id.toString()}>
+                          <SelectItem
+                            key={v.id}
+                            value={v.id.toString()}
+                          >
                             {v.companyName || v.name}
                           </SelectItem>
                         ))}
@@ -360,29 +405,42 @@ function ProductsContent() {
                     </Select>
 
                     {error && <p className="text-red-400">{error}</p>}
-                    {success && <p className="text-green-400">{success}</p>}
+                    {success && (
+                      <p className="text-green-400">{success}</p>
+                    )}
 
                     <DialogFooter>
-                      <Button className="bg-blue-600 hover:bg-blue-700">Create</Button>
+                      <Button className="bg-blue-600 hover:bg-blue-700">
+                        Create
+                      </Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
               </Dialog>
 
-              {/* CREATE VENDOR MODAL */}
-              <Dialog open={vendorModalOpen} onOpenChange={setVendorModalOpen}>
+              {/* ADD VENDOR MODAL */}
+              <Dialog
+                open={vendorModalOpen}
+                onOpenChange={setVendorModalOpen}
+              >
                 <DialogContent className="bg-gray-900 border-gray-700">
                   <DialogHeader>
                     <DialogTitle>Add Vendor</DialogTitle>
                   </DialogHeader>
 
-                  <form onSubmit={handleCreateVendor} className="space-y-4">
+                  <form
+                    onSubmit={handleCreateVendor}
+                    className="space-y-4"
+                  >
                     <Input
                       placeholder="Contact Person Name"
                       className="bg-gray-800 border-gray-700"
                       value={vendorForm.name}
                       onChange={(e) =>
-                        setVendorForm({ ...vendorForm, name: e.target.value })
+                        setVendorForm({
+                          ...vendorForm,
+                          name: e.target.value,
+                        })
                       }
                     />
 
@@ -391,15 +449,26 @@ function ProductsContent() {
                       className="bg-gray-800 border-gray-700"
                       value={vendorForm.companyName}
                       onChange={(e) =>
-                        setVendorForm({ ...vendorForm, companyName: e.target.value })
+                        setVendorForm({
+                          ...vendorForm,
+                          companyName: e.target.value,
+                        })
                       }
                     />
 
-                    {vendorError && <p className="text-red-400">{vendorError}</p>}
-                    {vendorSuccess && <p className="text-green-400">{vendorSuccess}</p>}
+                    {vendorError && (
+                      <p className="text-red-400">{vendorError}</p>
+                    )}
+                    {vendorSuccess && (
+                      <p className="text-green-400">
+                        {vendorSuccess}
+                      </p>
+                    )}
 
                     <DialogFooter>
-                      <Button className="bg-blue-600 hover:bg-blue-700">Create Vendor</Button>
+                      <Button className="bg-blue-600 hover:bg-blue-700">
+                        Create Vendor
+                      </Button>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -421,6 +490,7 @@ function ProductsContent() {
             <SelectTrigger className="bg-gray-800 border-gray-700">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
+
             <SelectContent className="bg-gray-800 border-gray-700">
               <SelectItem value="id-asc">ID ↑</SelectItem>
               <SelectItem value="id-desc">ID ↓</SelectItem>
@@ -483,7 +553,10 @@ function ProductsContent() {
 
               {paginated.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-400 py-4">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-gray-400 py-4"
+                  >
                     No products found.
                   </TableCell>
                 </TableRow>
