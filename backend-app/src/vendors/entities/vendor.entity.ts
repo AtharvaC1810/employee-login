@@ -16,8 +16,9 @@ export class Vendor {
   @Column({ length: 100, default: 'Unknown Vendor' })
   name: string;
 
-  @Column({ length: 150})
+  @Column({ type: 'varchar', length: 150, nullable: false, default: 'Unknown Company' })
   companyName: string;
+
 
   @Column({ length: 50, nullable: true })
   contactNumber: string;
