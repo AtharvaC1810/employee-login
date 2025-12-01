@@ -1,93 +1,129 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { Product } from "./entities/products.entity";
-import { CreateProductDto } from "./dto/create-product.dto";
-import { Multer } from "multer";
-import * as fs from "fs";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Product } from './entities/products.entity';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { Vendor } from '../vendors/entities/vendor.entity';
+
+// DTO for returning products with vendorName
+export class ProductResponseDto {
+  id: number;
+  name: string;
+  price: number;
+  vendorId: number;
+  vendorName: string;
+  image?: string;
+}
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectRepository(Product)
-    private readonly productRepo: Repository<Product>,
+    private productRepository: Repository<Product>,
+    @InjectRepository(Vendor)
+    private vendorRepository: Repository<Vendor>,
   ) {}
 
-  // ----------------------------------------------------
-  // CREATE PRODUCT
-  // ----------------------------------------------------
-  async create(dto: CreateProductDto, file?: Multer.File) {
-    // Validation
-    if (!dto.name || !dto.price || !dto.vendorId) {
-      throw new BadRequestException("Name, Price, and VendorId are required");
-    }
+  // ----------------------------
+  // Get all products
+  // ----------------------------
+  async findAll(): Promise<ProductResponseDto[]> {
+    const products = await this.productRepository.find({ relations: ['vendor'] });
 
-    const product = this.productRepo.create({
+    return products.map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      vendorId: p.vendor.id,
+      vendorName: p.vendor.companyName || p.vendor.name,
+      image: p.image ?? undefined,
+    }));
+  }
+
+  // ----------------------------
+  // Get single product
+  // ----------------------------
+  async findOne(id: number): Promise<ProductResponseDto> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: ['vendor'],
+    });
+    if (!product) throw new NotFoundException('Product not found');
+
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      vendorId: product.vendor.id,
+      vendorName: product.vendor.companyName || product.vendor.name,
+      image: product.image ?? undefined,
+    };
+  }
+
+  // ----------------------------
+  // Create product
+  // ----------------------------
+  async create(dto: CreateProductDto, image?: string): Promise<ProductResponseDto> {
+    const vendor = await this.vendorRepository.findOne({ where: { id: dto.vendorId } });
+    if (!vendor) throw new NotFoundException('Vendor not found');
+
+    const product = this.productRepository.create({
       name: dto.name,
       price: dto.price,
-      quantity: dto.quantity ?? 0,
-      vendorId: dto.vendorId,
-      vendorName: dto.vendorName ?? undefined,
-      image: file?.filename ?? undefined,
+      vendor,
+      image: image ?? undefined,
     });
 
-    return this.productRepo.save(product);
-  }
+    const saved = await this.productRepository.save(product);
 
-  // ----------------------------------------------------
-  // GET ALL PRODUCTS
-  // ----------------------------------------------------
-  findAll() {
-    return this.productRepo.find();
-  }
-
-  // ----------------------------------------------------
-  // GET ONE PRODUCT
-  // ----------------------------------------------------
-  async findOne(id: number) {
-    const product = await this.productRepo.findOne({ where: { id } });
-    if (!product) throw new NotFoundException("Product not found");
-    return product;
-  }
-
-  // ----------------------------------------------------
-  // UPDATE PRODUCT
-  // ----------------------------------------------------
-  async update(id: number, dto: CreateProductDto, file?: Multer.File) {
-    const product = await this.findOne(id);
-
-    // Remove old image if new one uploaded
-    if (file && product.image) {
-      const oldPath = `./uploads/products/${product.image}`;
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    }
-
-    const updatedProduct = {
-      ...product,
-      name: dto.name ?? product.name,
-      price: dto.price ?? product.price,
-      quantity: dto.quantity ?? product.quantity,
-      vendorId: dto.vendorId ?? product.vendorId,
-      vendorName: dto.vendorName ?? product.vendorName,
-      image: file?.filename ?? product.image,
+    return {
+      id: saved.id,
+      name: saved.name,
+      price: saved.price,
+      vendorId: saved.vendor.id,
+      vendorName: saved.vendor.companyName || saved.vendor.name,
+      image: saved.image ?? undefined,
     };
-
-    await this.productRepo.save(updatedProduct);
-    return updatedProduct;
   }
 
-  // ----------------------------------------------------
-  // DELETE PRODUCT
-  // ----------------------------------------------------
-  async remove(id: number) {
-    const product = await this.findOne(id);
+  // ----------------------------
+  // Update product
+  // ----------------------------
+  async update(id: number, dto: UpdateProductDto, image?: string): Promise<ProductResponseDto> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: ['vendor'],
+    });
+    if (!product) throw new NotFoundException('Product not found');
 
-    // Delete image file if exists
-    if (product.image) {
-      const filePath = `./uploads/products/${product.image}`;
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    if (dto.name !== undefined) product.name = dto.name;
+    if (dto.price !== undefined) product.price = dto.price;
+    if (dto.vendorId !== undefined) {
+      const vendor = await this.vendorRepository.findOne({ where: { id: dto.vendorId } });
+      if (!vendor) throw new NotFoundException('Vendor not found');
+      product.vendor = vendor;
     }
+    if (image !== undefined) product.image = image;
 
-    return this.productRepo.remove(product);
+    const saved = await this.productRepository.save(product);
+
+    return {
+      id: saved.id,
+      name: saved.name,
+      price: saved.price,
+      vendorId: saved.vendor.id,
+      vendorName: saved.vendor.companyName || saved.vendor.name,
+      image: saved.image ?? undefined,
+    };
+  }
+
+  // ----------------------------
+  // Delete product
+  // ----------------------------
+  async remove(id: number): Promise<void> {
+    const product = await this.productRepository.findOne({ where: { id } });
+    if (!product) throw new NotFoundException('Product not found');
+    await this.productRepository.remove(product);
   }
 }

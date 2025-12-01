@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Product } from '../../products/entities/products.entity';
 
 @Entity('vendors')
 export class Vendor {
@@ -37,4 +39,10 @@ export class Vendor {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // ------------------------
+  // Inverse relation to Product
+  // ------------------------
+  @OneToMany(() => Product, (product) => product.vendor)
+  products: Product[];
 }

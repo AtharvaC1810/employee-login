@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Vendor } from '../../vendors/entities/vendor.entity';
 
-@Entity("products")
+@Entity()
 export class Product {
   @PrimaryGeneratedColumn()
   id: number;
@@ -8,19 +9,16 @@ export class Product {
   @Column()
   name: string;
 
-  @Column("decimal")
+  @Column('decimal')
   price: number;
-
-  @Column()
-  quantity: number;
 
   @Column({ nullable: true })
   image: string;
 
-  // NEW FIELD
+  @ManyToOne(() => Vendor, (vendor) => vendor.products)
+  @JoinColumn({ name: 'vendorId' })
+  vendor: Vendor;
+
   @Column()
   vendorId: number;
-
-  @Column({ nullable: true })
-  vendorName: string;
 }
