@@ -13,10 +13,10 @@ export class Vendor {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 100, default: 'Unknown Vendor' })
+  @Column({ length: 100})
   name: string;
 
-  @Column({ type: 'varchar', length: 150, nullable: false, default: 'Unknown Company' })
+  @Column({ type: 'varchar', length: 150, nullable: false})
   companyName: string;
 
 
