@@ -23,16 +23,17 @@ export class Vendor {
   contactNumber: string;
 
   @Column({ length: 150, nullable: true })
-  email: string; // removed unique constraint
+  email: string; 
 
   @Column({ type: 'text', nullable: true })
   address: string;
 
-  @Column({ length: 50 })
-  sector: string;
+  @Column({ length: 50, default: 'Unknown Sector' })
+ sector: string;
+
 
   @Column({ length: 30, nullable: true })
-  gstNumber: string; // removed unique constraint
+  gstNumber: string;
 
   @CreateDateColumn()
   createdAt: Date;
