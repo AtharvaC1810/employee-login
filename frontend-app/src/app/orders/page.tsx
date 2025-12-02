@@ -103,7 +103,7 @@ function OrdersContent() {
               {orders.map((o) => (
                 <TableRow key={o.id} className="border-gray-700">
                   <TableCell className="text-white">{o.id}</TableCell>
-<TableCell className="flex items-center gap-2 text-white">
+<TableCell className="flex items-center gap-2">
   {o.product?.image ? (
     <Image
       src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
@@ -113,7 +113,7 @@ function OrdersContent() {
       className="rounded text-white"
     />
   ) : (
-    <span className="text-gray-400">No Image</span>
+    <span className="text-gray-900">No Image</span>
   )}
 </TableCell>
 
