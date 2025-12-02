@@ -8,6 +8,7 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ProductsModule } from './products/products.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { join } from 'path';
     PermissionsModule,
     VendorsModule,
     ProductsModule,
+    OrdersModule,
   ],
 })
 export class AppModule {}
