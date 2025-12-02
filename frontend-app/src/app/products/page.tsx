@@ -528,11 +528,52 @@ function ProductsContent() {
                 return;
               }
 
-              // You can connect this with API later
-              console.log("Order placed:", {
-                productId: orderProduct.id,
+        <Button
+          className="bg-green-600 hover:bg-green-700"
+          onClick={async () => {
+            setOrderError("");
+            setOrderSuccess("");
+
+            if (!orderQuantity || Number(orderQuantity) <= 0) {
+              setOrderError("Enter a valid quantity");
+              return;
+            }
+
+        const token = localStorage.getItem("token");
+
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/orders`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                productId: orderProduct!.id,
                 quantity: Number(orderQuantity),
-              });
+              }),
+            }
+          );
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || "Failed to place order");
+          }
+
+          setOrderSuccess("Order placed successfully!");
+
+          setTimeout(() => setOrderModalOpen(false), 900);
+
+        } catch (err: any) {
+          setOrderError(err.message);
+        }
+      }}
+    >
+      Place Order
+    </Button>
+
 
               setOrderSuccess("Order placed successfully!");
               setTimeout(() => setOrderModalOpen(false), 900);
