@@ -385,7 +385,7 @@ function ProductsContent() {
                     <Input
                       type="file"
                       accept="image/*"
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-800 border-gray-700 text-white"
                       onChange={(e) =>
                         setForm({
                           ...form,
@@ -490,7 +490,7 @@ function ProductsContent() {
 
               {/* ORDER PRODUCT MODAL */}
 <Dialog open={orderModalOpen} onOpenChange={setOrderModalOpen}>
-  <DialogContent className="bg-gray-900 border-gray-700">
+  <DialogContent className="bg-gray-900 border-gray-700 text-white">
     <DialogHeader>
       <DialogTitle>
         Order Product
@@ -500,7 +500,7 @@ function ProductsContent() {
     {orderProduct && (
       <div className="space-y-4">
 
-        <p className="text-lg font-semibold">
+        <p className="text-lg font-semibold text-white">
           {orderProduct.name}
         </p>
 

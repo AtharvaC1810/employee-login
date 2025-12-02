@@ -110,14 +110,14 @@ function OrdersContent() {
                         alt={o.product.name}
                         width={40}
                         height={40}
-                        className="rounded"
+                        className="rounded text-white"
                       />
                     )}
                     {o.product.name}
                   </TableCell>
                   <TableCell className="text-white">{o.quantity}</TableCell>
                   <TableCell className="text-white">₹{o.totalPrice}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-white">
                     {new Date(o.createdAt).toLocaleString()}
                   </TableCell>
                 </TableRow>
