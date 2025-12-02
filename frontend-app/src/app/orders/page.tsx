@@ -102,8 +102,8 @@ function OrdersContent() {
             <TableBody>
               {orders.map((o) => (
                 <TableRow key={o.id} className="border-gray-700">
-                  <TableCell>{o.id}</TableCell>
-<TableCell className="flex items-center gap-2">
+                  <TableCell className="text-white">{o.id}</TableCell>
+<TableCell className="flex items-center gap-2 text-white">
   {o.product?.image ? (
     <Image
       src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
