@@ -1,114 +1,139 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Sidebar from "@/components/Sidebar";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  TableHead,
+  TableHeader,
+} from "@/components/ui/table";
 
+// -----------------------------
+// INTERFACES
+// -----------------------------
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image?: string | null;
+}
+
+interface Order {
+  id: number;
+  product: Product;
+  quantity: number;
+  totalPrice: number;
+  createdAt: string;
+}
+
+// -----------------------------
+// MAIN COMPONENT
+// -----------------------------
 export default function OrdersPage() {
-  const [orders, setOrders] = useState([]);
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN", "ENGINEER", "INTERN"]}>
+      <OrdersContent />
+    </ProtectedRoute>
+  );
+}
+
+function OrdersContent() {
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  const BACKEND_URL = "https://employee-login-fs5m.onrender.com";
-
-  useEffect(() => {
-    async function fetchOrders() {
-      try {
-        const res = await fetch(`${BACKEND_URL}/orders`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch orders");
-        }
-
-        const data = await res.json();
-        setOrders(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+  // ---------------------------------
+  // FETCH ORDERS
+  // ---------------------------------
+  const fetchOrders = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch orders");
+      const data: Order[] = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  // ---------------------------------
+  // INITIAL LOAD
+  // ---------------------------------
+  useEffect(() => {
     fetchOrders();
   }, []);
 
+  // ---------------------------------
+  // RENDER
+  // ---------------------------------
   if (loading)
-    return (
-      <div className="p-8 text-center text-xl font-semibold">
-        Loading orders...
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="p-8 text-center text-red-500 text-xl">{error}</div>
-    );
+    return <p className="text-center mt-10 text-white">Loading orders...</p>;
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">📦 Orders</h1>
+    <div className="flex min-h-screen bg-gray-900 text-white">
+      <Sidebar />
+      <main className="flex-1 p-8 pl-64">
+        <h1 className="text-3xl font-bold mb-6">Orders</h1>
 
-      {orders.length === 0 ? (
-        <p className="text-gray-500">No orders found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-3">Order ID</th>
-                <th className="border p-3">Product</th>
-                <th className="border p-3">Product Image</th>
-                <th className="border p-3">Quantity</th>
-                <th className="border p-3">Price</th>
-                <th className="border p-3">Vendor</th>
-                <th className="border p-3">Created At</th>
-              </tr>
-            </thead>
+        <div className="rounded-lg bg-gray-800 p-4 mt-4">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-700">
+                <TableHead>ID</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Quantity</TableHead>
+                <TableHead>Total Price</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
 
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id} className="text-center">
-                  <td className="border p-3">{order.id}</td>
-
-                  <td className="border p-3 font-semibold">
-                    {order.product?.name || "N/A"}
-                  </td>
-
-                  <td className="border p-3">
-                    {order.product?.image ? (
+            <TableBody>
+              {orders.map((o) => (
+                <TableRow key={o.id} className="border-gray-700">
+                  <TableCell>{o.id}</TableCell>
+                  <TableCell className="flex items-center gap-2">
+                    {o.product.image && (
                       <Image
-                        src={`${BACKEND_URL}/uploads/products/${order.product.image}`}
-                        alt="Product Image"
-                        width={70}
-                        height={70}
-                        className="rounded-md mx-auto"
+                        src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
+                        alt={o.product.name}
+                        width={40}
+                        height={40}
+                        className="rounded"
                       />
-                    ) : (
-                      <span className="text-gray-400 text-sm">
-                        No Image
-                      </span>
                     )}
-                  </td>
-
-                  <td className="border p-3">{order.quantity}</td>
-
-                  <td className="border p-3">₹{order.price}</td>
-
-                  <td className="border p-3">{order.vendor?.name || "N/A"}</td>
-
-                  <td className="border p-3">
-                    {new Date(order.createdAt).toLocaleString()}
-                  </td>
-                </tr>
+                    {o.product.name}
+                  </TableCell>
+                  <TableCell>{o.quantity}</TableCell>
+                  <TableCell>₹{o.totalPrice}</TableCell>
+                  <TableCell>
+                    {new Date(o.createdAt).toLocaleString()}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+
+              {orders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-400 py-4">
+                    No orders found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-      )}
+      </main>
     </div>
   );
 }

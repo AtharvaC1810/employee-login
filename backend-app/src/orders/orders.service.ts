@@ -17,46 +17,54 @@ export class OrdersService {
   // ---------------------------
   // CREATE ORDER
   // ---------------------------
-  async createOrder(dto: { productId: number; quantity: number; userId?: number }) {
+  async createOrder(dto: { productId: number; quantity: number; userId?: number }): Promise<Order> {
     const { productId, quantity, userId } = dto;
 
-    const product = await this.productRepository.findOne({
-      where: { id: productId },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
+    // Find product
+    const product = await this.productRepository.findOne({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Product not found');
 
     const totalPrice = Number(product.price) * quantity;
 
+    // Create order
     const order = this.orderRepository.create({
-      productId,
+      productId,          // FK
       quantity,
       totalPrice,
-      userId: userId ?? undefined, // ✅ avoid null
+      userId: userId ?? undefined, // avoid null, set undefined if not provided
     });
 
-    return this.orderRepository.save(order);
+    return await this.orderRepository.save(order);
   }
 
   // ---------------------------
   // GET ALL ORDERS
   // ---------------------------
-  findAll() {
-    return this.orderRepository.find({
-      order: { createdAt: 'DESC' },
-      relations: ['product'],
+  async findAll(): Promise<Order[]> {
+    return await this.orderRepository.find({
+      relations: ['product'],      // include product details
+      order: { createdAt: 'DESC' }, // newest first
     });
   }
 
   // ---------------------------
   // GET SINGLE ORDER
   // ---------------------------
-  findOne(id: number) {
-    return this.orderRepository.findOne({
+  async findOne(id: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({
       where: { id },
       relations: ['product'],
     });
+
+    if (!order) throw new NotFoundException('Order not found');
+    return order;
+  }
+
+  // ---------------------------
+  // DELETE ORDER
+  // ---------------------------
+  async remove(id: number): Promise<void> {
+    const order = await this.findOne(id);
+    await this.orderRepository.remove(order);
   }
 }
