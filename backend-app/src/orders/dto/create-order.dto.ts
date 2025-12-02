@@ -12,9 +12,9 @@ export class CreateOrderDto {
   quantity: number;
 
   // optional: the frontend can send userId if needed
-  @IsOptional()
-  @Type(() => Number)
-  userId?: number;
+  //@IsOptional()
+  //@Type(() => Number)
+  //userId?: number;
 }
 
 
