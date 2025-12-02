@@ -107,7 +107,7 @@ function OrdersContent() {
                     {o.product.image && (
                       <Image
                         src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
-                        alt={o.product.name}
+                        alt={o.product.name  || "Product"}
                         width={40}
                         height={40}
                         className="rounded text-white"
