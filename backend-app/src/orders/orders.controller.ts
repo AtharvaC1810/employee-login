@@ -9,40 +9,27 @@ import {
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { Order } from './entities/order.entity';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  // ---------------------------
-  // CREATE ORDER
-  // ---------------------------
   @Post()
-  async createOrder(
-    @Body() body: { productId: number; quantity: number; userId?: number },
-  ): Promise<Order> {
-    return this.ordersService.createOrder(body);
+  async createOrder(@Body() dto: CreateOrderDto): Promise<Order> {
+    return this.ordersService.createOrder(dto);
   }
 
-  // ---------------------------
-  // GET ALL ORDERS
-  // ---------------------------
   @Get()
   async findAll(): Promise<Order[]> {
     return this.ordersService.findAll();
   }
 
-  // ---------------------------
-  // GET SINGLE ORDER
-  // ---------------------------
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Order> {
     return this.ordersService.findOne(id);
   }
 
-  // ---------------------------
-  // DELETE ORDER
-  // ---------------------------
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
     await this.ordersService.remove(id);
