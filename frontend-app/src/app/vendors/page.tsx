@@ -330,7 +330,7 @@ function VendorsContent() {
   return (
     <div className="flex bg-gray-900 min-h-screen text-white">
       {/* MAIN */}
-      <main className="flex-1 p-8 pl-64">
+      <main className="flex-1 p-8">
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Vendors Management</h1>

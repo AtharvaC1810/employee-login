@@ -342,7 +342,7 @@ function ProductsContent() {
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
       <Sidebar />
-      <main className="flex-1 p-8 pl-64">
+      <main className="flex-1 p-8">
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Products Management</h1>
@@ -365,7 +365,7 @@ function ProductsContent() {
                   <form onSubmit={handleCreateProduct} className="space-y-4">
                     <Input
                       placeholder="Name"
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-800 border-gray-700 text-white"
                       value={form.name}
                       onChange={(e) =>
                         setForm({ ...form, name: e.target.value })
@@ -375,7 +375,7 @@ function ProductsContent() {
                     <Input
                       placeholder="Price"
                       type="number"
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-800 border-gray-700 text-white"
                       value={form.price}
                       onChange={(e) =>
                         setForm({ ...form, price: e.target.value })
@@ -401,11 +401,11 @@ function ProductsContent() {
                         else setForm({ ...form, vendorId: value });
                       }}
                     >
-                      <SelectTrigger className="bg-gray-800 border-gray-700">
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                         <SelectValue placeholder="Select Vendor" />
                       </SelectTrigger>
 
-                      <SelectContent className="bg-gray-800 border-gray-700">
+                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
                         {vendors.map((v) => (
                           <SelectItem
                             key={v.id}
@@ -424,7 +424,7 @@ function ProductsContent() {
                     )}
 
                     <DialogFooter>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                         Create
                       </Button>
                     </DialogFooter>
@@ -437,7 +437,7 @@ function ProductsContent() {
                 open={vendorModalOpen}
                 onOpenChange={setVendorModalOpen}
               >
-                <DialogContent className="bg-gray-900 border-gray-700">
+                <DialogContent className="bg-gray-900 border-gray-700 text-white">
                   <DialogHeader>
                     <DialogTitle>Add Vendor</DialogTitle>
                   </DialogHeader>
@@ -448,7 +448,7 @@ function ProductsContent() {
                   >
                     <Input
                       placeholder="Contact Person Name"
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-800 border-gray-700 text-white"
                       value={vendorForm.name}
                       onChange={(e) =>
                         setVendorForm({
@@ -460,7 +460,7 @@ function ProductsContent() {
 
                     <Input
                       placeholder="Company Name"
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-800 border-gray-700 text-white"
                       value={vendorForm.companyName}
                       onChange={(e) =>
                         setVendorForm({
@@ -507,7 +507,7 @@ function ProductsContent() {
         <Input
           type="number"
           placeholder="Enter quantity"
-          className="bg-gray-800 border-gray-700"
+          className="bg-gray-800 border-gray-700 text-white"
           value={orderQuantity}
           onChange={(e) => setOrderQuantity(e.target.value)}
         />
@@ -632,9 +632,9 @@ function ProductsContent() {
                     )}
                   </TableCell>
 
-                  <TableCell>{p.name}</TableCell>
-                  <TableCell>₹{p.price}</TableCell>
-                  <TableCell>{p.vendorName}</TableCell>
+                  <TableCell className="text-white">{p.name}</TableCell>
+                  <TableCell className="text-white">₹{p.price}</TableCell>
+                  <TableCell className="text-white">{p.vendorName}</TableCell>
 
                   <TableCell className="text-center flex gap-2 justify-center">
                       <Button
@@ -682,7 +682,7 @@ function ProductsContent() {
           <div className="flex justify-between items-center mt-6">
             <Button
               variant="outline"
-              className="border-gray-600"
+              className="border-gray-600 text-gray-900"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
             >
@@ -695,7 +695,7 @@ function ProductsContent() {
 
             <Button
               variant="outline"
-              className="border-gray-600"
+              className="border-gray-600 text-gray-900"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
             >

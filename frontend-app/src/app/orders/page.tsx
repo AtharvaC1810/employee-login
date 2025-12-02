@@ -84,7 +84,7 @@ function OrdersContent() {
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
       <Sidebar />
-      <main className="flex-1 p-8 pl-64">
+      <main className="flex-1 p-8">
         <h1 className="text-3xl font-bold mb-6">Orders</h1>
 
         <div className="rounded-lg bg-gray-800 p-4 mt-4">
@@ -115,8 +115,8 @@ function OrdersContent() {
                     )}
                     {o.product.name}
                   </TableCell>
-                  <TableCell>{o.quantity}</TableCell>
-                  <TableCell>₹{o.totalPrice}</TableCell>
+                  <TableCell className="text-white">{o.quantity}</TableCell>
+                  <TableCell className="text-white">₹{o.totalPrice}</TableCell>
                   <TableCell>
                     {new Date(o.createdAt).toLocaleString()}
                   </TableCell>
