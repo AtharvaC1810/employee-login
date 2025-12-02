@@ -74,6 +74,13 @@ function ProductsContent() {
   const [search, setSearch] = useState("");
   const [sortOption, setSortOption] = useState("id-asc");
 
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [orderProduct, setOrderProduct] = useState<Product | null>(null);
+  const [orderQuantity, setOrderQuantity] = useState("");
+  const [orderSuccess, setOrderSuccess] = useState("");
+  const [orderError, setOrderError] = useState("");
+
+
   const [modalOpen, setModalOpen] = useState(false);
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
 
@@ -480,6 +487,65 @@ function ProductsContent() {
                   </form>
                 </DialogContent>
               </Dialog>
+
+              {/* ORDER PRODUCT MODAL */}
+<Dialog open={orderModalOpen} onOpenChange={setOrderModalOpen}>
+  <DialogContent className="bg-gray-900 border-gray-700">
+    <DialogHeader>
+      <DialogTitle>
+        Order Product
+      </DialogTitle>
+    </DialogHeader>
+
+    {orderProduct && (
+      <div className="space-y-4">
+
+        <p className="text-lg font-semibold">
+          {orderProduct.name}
+        </p>
+
+        <Input
+          type="number"
+          placeholder="Enter quantity"
+          className="bg-gray-800 border-gray-700"
+          value={orderQuantity}
+          onChange={(e) => setOrderQuantity(e.target.value)}
+        />
+
+        {orderError && (
+          <p className="text-red-400">{orderError}</p>
+        )}
+        {orderSuccess && (
+          <p className="text-green-400">{orderSuccess}</p>
+        )}
+
+        <DialogFooter>
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            onClick={() => {
+              if (!orderQuantity || Number(orderQuantity) <= 0) {
+                setOrderError("Enter a valid quantity");
+                return;
+              }
+
+              // You can connect this with API later
+              console.log("Order placed:", {
+                productId: orderProduct.id,
+                quantity: Number(orderQuantity),
+              });
+
+              setOrderSuccess("Order placed successfully!");
+              setTimeout(() => setOrderModalOpen(false), 900);
+            }}
+          >
+            Place Order
+          </Button>
+        </DialogFooter>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
+
             </>
           )}
         </div>
@@ -544,17 +610,32 @@ function ProductsContent() {
                   <TableCell>₹{p.price}</TableCell>
                   <TableCell>{p.vendorName}</TableCell>
 
-                  <TableCell className="text-center">
-                    {currentUser?.role === "ADMIN" && (
+                  <TableCell className="text-center flex gap-2 justify-center">
                       <Button
                         size="sm"
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => handleDelete(p.id)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => {
+                          setOrderProduct(p);
+                          setOrderQuantity("");
+                          setOrderError("");
+                          setOrderSuccess("");
+                          setOrderModalOpen(true);
+                        }}
                       >
-                        Delete
+                        Order
                       </Button>
-                    )}
-                  </TableCell>
+
+                      {currentUser?.role === "ADMIN" && (
+                        <Button
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() => handleDelete(p.id)}
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </TableCell>
+
                 </TableRow>
               ))}
 

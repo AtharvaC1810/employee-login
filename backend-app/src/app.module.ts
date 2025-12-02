@@ -19,7 +19,7 @@ import { join } from 'path';
     // ✅ Static file serving for uploads/products
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // maps folder
-      serveRoot: '/uploads', // URL prefix → http://localhost:3000/uploads/*
+      serveRoot: '/uploads', 
     }),
 
     // ✅ TypeORM Database Config
