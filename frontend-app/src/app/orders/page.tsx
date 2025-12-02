@@ -103,18 +103,20 @@ function OrdersContent() {
               {orders.map((o) => (
                 <TableRow key={o.id} className="border-gray-700">
                   <TableCell>{o.id}</TableCell>
-                  <TableCell className="flex items-center gap-2">
-                    {o.product.image && (
-                      <Image
-                        src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product?.image}`}
-                        alt={o.product.name  || "Product"}
-                        width={40}
-                        height={40}
-                        className="rounded text-white"
-                      />
-                    )}
-                    {o.product.name}
-                  </TableCell>
+<TableCell className="flex items-center gap-2">
+  {o.product?.image ? (
+    <Image
+      src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
+      alt={o.product?.name || "Product"}
+      width={40}
+      height={40}
+      className="rounded text-white"
+    />
+  ) : (
+    <span className="text-gray-400">No Image</span>
+  )}
+</TableCell>
+
                   <TableCell className="text-white">{o.quantity}</TableCell>
                   <TableCell className="text-white">₹{o.totalPrice}</TableCell>
                   <TableCell className="text-white">
