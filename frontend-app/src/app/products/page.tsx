@@ -520,13 +520,6 @@ function ProductsContent() {
         )}
 
         <DialogFooter>
-          <Button
-            className="bg-green-600 hover:bg-green-700"
-            onClick={() => {
-              if (!orderQuantity || Number(orderQuantity) <= 0) {
-                setOrderError("Enter a valid quantity");
-                return;
-              }
 
         <Button
           className="bg-green-600 hover:bg-green-700"
@@ -573,14 +566,6 @@ function ProductsContent() {
     >
       Place Order
     </Button>
-
-
-              setOrderSuccess("Order placed successfully!");
-              setTimeout(() => setOrderModalOpen(false), 900);
-            }}
-          >
-            Place Order
-          </Button>
         </DialogFooter>
       </div>
     )}
