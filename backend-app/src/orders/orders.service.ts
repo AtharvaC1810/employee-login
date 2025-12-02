@@ -17,8 +17,8 @@ export class OrdersService {
   // ---------------------------
   // CREATE ORDER
   // ---------------------------
-  async createOrder(dto: { productId: number; quantity: number; userId?: number }): Promise<Order> {
-    const { productId, quantity, userId } = dto;
+  async createOrder(dto: { productId: number; quantity: number; }): Promise<Order> {
+    const { productId, quantity } = dto;
 
     // Find product
     const product = await this.productRepository.findOne({ where: { id: productId } });
@@ -28,10 +28,10 @@ export class OrdersService {
 
     // Create order
     const order = this.orderRepository.create({
-      productId,          // FK
+      productId,          
       quantity,
       totalPrice,
-      userId: userId ?? undefined, // avoid null, set undefined if not provided
+      //userId: userId ?? undefined, // avoid null, set undefined if not provided
     });
 
     return await this.orderRepository.save(order);

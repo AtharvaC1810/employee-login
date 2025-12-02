@@ -11,10 +11,11 @@ export class CreateOrderDto {
   @Min(1)
   quantity: number;
 
-  // optional: the frontend can send userId if needed
-  //@IsOptional()
-  //@Type(() => Number)
-  //userId?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  userId?: number;
+
 }
 
 
