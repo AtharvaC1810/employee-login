@@ -106,7 +106,7 @@ function OrdersContent() {
                   <TableCell className="flex items-center gap-2">
                     {o.product.image && (
                       <Image
-                        src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
+                        src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product?.image}`}
                         alt={o.product.name  || "Product"}
                         width={40}
                         height={40}

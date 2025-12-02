@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { Product } from '../products/entities/products.entity';
+import { Not, IsNull } from 'typeorm';
 
 @Injectable()
 export class OrdersService {
@@ -41,10 +42,12 @@ export class OrdersService {
   // GET ALL ORDERS
   // ---------------------------
   async findAll(): Promise<Order[]> {
-    return await this.orderRepository.find({
-      relations: ['product'],      // include product details
-      order: { createdAt: 'DESC' }, // newest first
-    });
+ return await this.orderRepository.find({
+  relations: ['product'],
+  where: { product: { id: Not(IsNull()) } }, // only orders with a valid product
+  order: { createdAt: 'DESC' },
+});
+
   }
 
   // ---------------------------
