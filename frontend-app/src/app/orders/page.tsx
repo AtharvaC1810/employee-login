@@ -104,18 +104,24 @@ function OrdersContent() {
                 <TableRow key={o.id} className="border-gray-700">
                   <TableCell className="text-white">{o.id}</TableCell>
 <TableCell className="flex items-center gap-2">
-  {o.product?.image ? (
-    <Image
-      src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
-      alt={o.product?.name || "Product"}
-      width={40}
-      height={40}
-      className="rounded text-white"
-    />
+  {o.product ? (
+    <>
+      {o.product.image && (
+        <Image
+          src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${o.product.image}`}
+          alt={o.product.name}
+          width={40}
+          height={40}
+          className="rounded"
+        />
+      )}
+      <span className="text-white">{o.product.name}</span>
+    </>
   ) : (
-    <span className="text-gray-900">No Image</span>
+    <span className="text-gray-400">No Product</span>
   )}
 </TableCell>
+
 
                   <TableCell className="text-white">{o.quantity}</TableCell>
                   <TableCell className="text-white">₹{o.totalPrice}</TableCell>
