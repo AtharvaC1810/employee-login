@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
-import { Store as StoreIcon, Package2 as ProductIcon } from "lucide-react";
 
+// icons
 import {
   User as UserIcon,
   Users as UsersIcon,
@@ -12,6 +12,9 @@ import {
   Lock as PermissionIcon,
   LayoutDashboard,
   LogOut as LogoutIcon,
+  Store as StoreIcon,
+  Package2 as ProductIcon,
+  ShoppingBag as OrderIcon,   // ⬅ added icon for Orders
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -52,7 +55,7 @@ export default function DashboardPage() {
   };
 
   // -----------------------------
-  // DASHBOARD CARDS
+  // DASHBOARD CARDS (UPDATED)
   // -----------------------------
   const cards = [
     {
@@ -88,6 +91,16 @@ export default function DashboardPage() {
       action: () => router.push("/products"),
       visible: role === "ADMIN",
       bg: "bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500",
+    },
+
+    // ⭐ NEW — ORDERS PAGE CARD
+    {
+      title: "Orders Management",
+      desc: "View and manage customer orders",
+      icon: <OrderIcon size={32} />,
+      action: () => router.push("/orders"),
+      visible: role === "ADMIN",
+      bg: "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500",
     },
 
     {
