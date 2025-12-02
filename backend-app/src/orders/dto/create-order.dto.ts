@@ -1,4 +1,4 @@
-import { IsInt, Min } from 'class-validator';
+import { IsInt, Min, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateOrderDto {
@@ -12,6 +12,7 @@ export class CreateOrderDto {
   quantity: number;
 
   // optional: the frontend can send userId if needed
+  @IsOptional()
   @Type(() => Number)
   userId?: number;
 }
