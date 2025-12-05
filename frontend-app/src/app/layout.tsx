@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const publicPages = ["/login", "/register"];
+  const publicPages = ["/login", "/register", "/forgot-password", "/reset-password"];
 
   const showSidebar = !publicPages.includes(pathname);
 
