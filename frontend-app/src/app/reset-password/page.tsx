@@ -1,8 +1,12 @@
-// app/reset-password/page.tsx
-"use client"; // THIS IS REQUIRED
+"use client";
 
-import ResetPasswordForm from './ResetPasswordForm';
+import { Suspense } from "react";
+import ResetPasswordPage from "./ResetPasswordForm";
 
 export default function Page() {
-  return <ResetPasswordForm />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordPage />
+    </Suspense>
+  );
 }

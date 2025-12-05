@@ -6,20 +6,33 @@ import { useState } from "react";
 export default function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: any) {
     e.preventDefault();
 
-    const res = await fetch("https://employee-login-fs5m.onrender.com/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password }),
-    });
+    if (!token) {
+      setMessage("Invalid or missing token.");
+      return;
+    }
 
-    const data = await res.json();
-    setMessage(data.message);
+    try {
+      const res = await fetch(
+        "https://employee-login-fs5m.onrender.com/auth/reset-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, password }),
+        }
+      );
+
+      const data = await res.json();
+      setMessage(data.message || "Password reset complete.");
+    } catch (error) {
+      setMessage("Something went wrong. Please try again.");
+    }
   }
 
   return (
@@ -37,6 +50,7 @@ export default function ResetPasswordForm() {
               className="border p-2 rounded w-full mb-3"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
 
             <button
