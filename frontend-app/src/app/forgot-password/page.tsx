@@ -19,10 +19,10 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token"); // optional, if auth required
+      const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/forgot-password`,
+        `${process.env.NEXT_PUBLIC_API_URL}/forgot-password/request`,
         {
           method: "POST",
           headers: {
