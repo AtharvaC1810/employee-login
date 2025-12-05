@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -6,23 +11,84 @@ import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRole } from './user-role.enum';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private userRepo: Repository<User>) {}
+  constructor(
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
+  ) {}
 
-  // List all users (admin only if role restriction enforced in controller)
+  // ------------------------------------------------
+  // FIND USER BY EMAIL
+  // ------------------------------------------------
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepo.findOne({ where: { email } });
+  }
+
+  // ------------------------------------------------
+  // GENERATE RESET TOKEN
+  // ------------------------------------------------
+  async generateResetToken(email: string): Promise<string> {
+    const user = await this.findByEmail(email);
+    if (!user) throw new NotFoundException('User not found');
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = Date.now() + 3600000; // 1 hour in ms
+
+    user.resetToken = token;
+    user.resetTokenExpiry = expiry;
+
+    await this.userRepo.save(user);
+
+    return token;
+  }
+
+  // ------------------------------------------------
+  // RESET PASSWORD USING TOKEN
+  // ------------------------------------------------
+  async updatePassword(token: string, newPassword: string) {
+    const user = await this.userRepo.findOne({
+      where: { resetToken: token },
+    });
+
+    if (!user) throw new NotFoundException('Invalid reset token');
+    if (!user.resetTokenExpiry || user.resetTokenExpiry < Date.now()) {
+      throw new BadRequestException('Reset token expired');
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashed;
+    user.resetToken = null;
+    user.resetTokenExpiry = null;
+
+    await this.userRepo.save(user);
+
+    return { message: 'Password updated successfully' };
+  }
+
+  // ------------------------------------------------
+  // GET ALL USERS
+  // ------------------------------------------------
   findAll(role?: UserRole) {
     if (role) return this.userRepo.find({ where: { role } });
     return this.userRepo.find();
   }
 
+  // ------------------------------------------------
+  // GET USER BY ID
+  // ------------------------------------------------
   async findOne(id: number, requestingUser?: User) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
-    // Non-admins can only access their own info
-    if (requestingUser && requestingUser.role !== UserRole.ADMIN && requestingUser.id !== id) {
+    if (
+      requestingUser &&
+      requestingUser.role !== UserRole.ADMIN &&
+      requestingUser.id !== id
+    ) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -30,11 +96,17 @@ export class UsersService {
     return rest;
   }
 
+  // ------------------------------------------------
+  // CREATE USER (ADMIN)
+  // ------------------------------------------------
   async createByAdmin(dto: CreateUserDto) {
-    const exists = await this.userRepo.findOne({ where: { email: dto.email } });
+    const exists = await this.userRepo.findOne({
+      where: { email: dto.email },
+    });
     if (exists) throw new BadRequestException('Email already exists');
 
     const hashed = await bcrypt.hash(dto.password, 10);
+
     const user = this.userRepo.create({
       name: dto.name,
       email: dto.email,
@@ -43,32 +115,42 @@ export class UsersService {
     });
 
     await this.userRepo.save(user);
+
     const { password, ...rest } = user as any;
     return rest;
   }
 
+  // ------------------------------------------------
+  // UPDATE USER
+  // ------------------------------------------------
   async update(id: number, dto: UpdateUserDto, requestingUser?: User) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
-    // Non-admins can only update themselves
-    if (requestingUser && requestingUser.role !== UserRole.ADMIN && requestingUser.id !== id) {
+    if (
+      requestingUser &&
+      requestingUser.role !== UserRole.ADMIN &&
+      requestingUser.id !== id
+    ) {
       throw new ForbiddenException('Access denied');
     }
 
-    // If password is present, hash it
     if (dto.password) {
       dto.password = await bcrypt.hash(dto.password, 10);
     } else {
-      delete dto.password; // don't overwrite with empty password
+      delete dto.password;
     }
 
     Object.assign(user, dto);
     await this.userRepo.save(user);
+
     const { password, ...rest } = user as any;
     return rest;
   }
 
+  // ------------------------------------------------
+  // DELETE USER
+  // ------------------------------------------------
   async remove(id: number, requestingUser?: User) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
@@ -78,6 +160,7 @@ export class UsersService {
     }
 
     await this.userRepo.remove(user);
+
     const { password, ...rest } = user as any;
     return rest;
   }

@@ -21,4 +21,10 @@ export class User {
     default: UserRole.INTERN,
   })
   role: UserRole;
+
+  @Column({ type: 'varchar', nullable: true })
+  resetToken?: string | null;
+
+  @Column({ type: 'bigint', nullable: true })
+  resetTokenExpiry?: number | null;
 }
