@@ -17,9 +17,9 @@ export class ForgotPasswordController {
   // Reset password using token
   @Post('reset')
   async reset(@Body() body: ResetPasswordDto) {
-    if (!body.token || !body.newPassword) {
+    if (!body.token || !body.password) {
       throw new BadRequestException('Token and new password are required');
     }
-    return this.fps.resetPassword(body.token, body.newPassword);
+    return this.fps.resetPassword(body.token, body.password);
   }
 }
