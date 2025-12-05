@@ -1,34 +1,31 @@
-import nodemailer from 'nodemailer';
 import { Injectable, Logger } from '@nestjs/common';
+import * as sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class MailService {
-  private transporter;
   private logger = new Logger(MailService.name);
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST || 'smtp.gmail.com',
-      port: Number(process.env.MAIL_PORT || 587),
-      secure: false,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
   }
 
   async sendMail(to: string, subject: string, html: string, text?: string) {
-    const info = await this.transporter.sendMail({
-      from: `"Employee Login" <${process.env.MAIL_USER}>`,
+    const msg = {
       to,
+      from: process.env.MAIL_FROM!,
       subject,
       text: text || undefined,
       html,
-    });
+    };
 
-    this.logger.log(`Mail sent: ${info.messageId}`);
-    return info;
+    try {
+      const response = await sgMail.send(msg);
+      this.logger.log(`Mail sent to ${to}`);
+      return response;
+    } catch (err: any) {
+      this.logger.error(`Failed to send mail: ${err.message}`);
+      throw err;
+    }
   }
 
   buildResetHtml(name: string | undefined, resetUrl: string) {
