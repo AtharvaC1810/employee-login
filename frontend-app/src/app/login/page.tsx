@@ -98,6 +98,15 @@ export default function LoginPage() {
               />
             </div>
 
+            <div className="flex justify-end">
+              <span
+                onClick={() => router.push("/forgot-password")}
+                className="text-blue-400 cursor-pointer font-semibold hover:underline text-sm"
+              >
+                Forgot Password?
+              </span>
+            </div>
+
             <Button
               type="submit"
               disabled={loading}
