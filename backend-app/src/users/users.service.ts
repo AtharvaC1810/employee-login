@@ -48,26 +48,22 @@ export class UsersService {
   // ------------------------------------------------
   // RESET PASSWORD USING TOKEN
   // ------------------------------------------------
-  async updatePassword(token: string, newPassword: string) {
-    const user = await this.userRepo.findOne({
-      where: { resetToken: token },
-    });
+async updatePassword(userId: number, newPassword: string) {
+  const user = await this.userRepo.findOne({
+    where: { id: userId },
+  });
 
-    if (!user) throw new NotFoundException('Invalid reset token');
-    if (!user.resetTokenExpiry || user.resetTokenExpiry < Date.now()) {
-      throw new BadRequestException('Reset token expired');
-    }
+  if (!user) throw new NotFoundException("User not found");
 
-    const hashed = await bcrypt.hash(newPassword, 10);
+  const hashed = await bcrypt.hash(newPassword, 10);
 
-    user.password = hashed;
-    user.resetToken = null;
-    user.resetTokenExpiry = null;
+  user.password = hashed;
 
-    await this.userRepo.save(user);
+  await this.userRepo.save(user);
 
-    return { message: 'Password updated successfully' };
-  }
+  return { message: "Password updated successfully" };
+}
+
 
   // ------------------------------------------------
   // GET ALL USERS
