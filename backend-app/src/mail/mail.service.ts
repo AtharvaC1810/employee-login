@@ -4,16 +4,28 @@ import * as sgMail from '@sendgrid/mail';
 @Injectable()
 export class MailService {
   private logger = new Logger(MailService.name);
+  private EMAIL_FROM: string;
 
   constructor() {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+    const apiKey = process.env.SENDGRID_API_KEY;
+    const emailFrom = process.env.EMAIL_FROM;
+
+    if (!apiKey) {
+      throw new Error("SENDGRID_API_KEY is missing in environment variables");
+    }
+    if (!emailFrom) {
+      throw new Error("EMAIL_FROM is missing in environment variables");
+    }
+
+    this.EMAIL_FROM = emailFrom;
+    sgMail.setApiKey(apiKey);
   }
 
   async sendMail(to: string, subject: string, html: string, text?: string) {
     try {
       const msg = {
         to,
-        from: process.env.EMAIL_FROM!,
+        from: this.EMAIL_FROM,
         subject,
         text: text || undefined,
         html,
@@ -33,8 +45,8 @@ export class MailService {
       <div style="font-family: sans-serif; line-height:1.4;">
         <h2>Password reset request</h2>
         <p>Hello ${name || 'user'},</p>
-        <p>Click below to reset your password:</p>
-        <p><a href="${resetUrl}">Reset password</a></p>
+        <p>Click the button below to reset your password:</p>
+        <p><a href="${resetUrl}">Reset Password</a></p>
       </div>
     `;
   }
