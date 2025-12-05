@@ -20,7 +20,7 @@ export default function ResetPasswordForm() {
 
     try {
       const res = await fetch(
-        "https://employee-login-fs5m.onrender.com/auth/reset-password",
+        "https://employee-login-fs5m.onrender.com/reset-password",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

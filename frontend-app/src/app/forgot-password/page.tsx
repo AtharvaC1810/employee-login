@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
       const token = localStorage.getItem("token"); // optional, if auth required
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`,
+        `${process.env.NEXT_PUBLIC_API_URL}/forgot-password`,
         {
           method: "POST",
           headers: {
