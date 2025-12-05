@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token"); 
+  const token = searchParams?.get("token") ?? ""; // ensure string
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,9 +16,10 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  // Redirect or show error if token is missing
   useEffect(() => {
     if (!token) {
-      setError("Invalid or missing token.");
+      setError("Invalid or missing token. Please use the reset link sent to your email.");
     }
   }, [token]);
 
@@ -37,16 +38,11 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token, newPassword }),
-        }
-      );
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword }),
+      });
 
       const data = await res.json();
 
@@ -58,15 +54,15 @@ export default function ResetPasswordPage() {
         router.push("/login");
       }, 2000);
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900">
-      <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md text-white">
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 px-4">
+      <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md text-white shadow-lg">
         <h1 className="text-2xl font-bold mb-6 text-center">Reset Password</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,6 +73,7 @@ export default function ResetPasswordPage() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
+            minLength={6}
           />
 
           <Input
@@ -86,6 +83,7 @@ export default function ResetPasswordPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            minLength={6}
           />
 
           {error && <p className="text-red-400">{error}</p>}
@@ -104,7 +102,7 @@ export default function ResetPasswordPage() {
           Remembered your password?{" "}
           <button
             type="button"
-            className="text-blue-400 underline"
+            className="text-blue-400 underline hover:text-blue-500"
             onClick={() => router.push("/login")}
           >
             Login
