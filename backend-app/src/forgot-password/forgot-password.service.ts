@@ -58,40 +58,39 @@ export class ForgotPasswordService {
   }
 
   // Reset password given token
-  async resetPassword(token: string, newPassword: string) {
-    // Find possible candidates not used and not expired
-    const candidates = await this.tokenRepo.find({
-      where: { used: false, expiresAt: Not(IsNull()) },
-      relations: ['user'],
-      order: { createdAt: 'DESC' },
-    });
+async resetPassword(token: string, newPassword: string) {
+  const candidates = await this.tokenRepo.find({
+    where: { used: false, expiresAt: Not(IsNull()) },
+    relations: ['user'],
+    order: { createdAt: 'DESC' },
+  });
 
-    // Compare token with stored hashes — we cannot search by hash
-    let match: PasswordResetToken | null = null;
-    for (const c of candidates) {
-      // skip expired
-      if (c.expiresAt < new Date()) continue;
-      const ok = await compareToken(c.tokenHash, token);
-      if (ok) {
-        match = c;
-        break;
-      }
+  let match: PasswordResetToken | null = null;
+  for (const c of candidates) {
+    if (c.expiresAt < new Date()) continue;
+
+    const ok = await compareToken(c.tokenHash, token);
+    if (ok) {
+      match = c;
+      break;
     }
-
-    if (!match) {
-      throw new BadRequestException('Invalid or expired token');
-    }
-
-    const user = match.user;
-    if (!user) throw new NotFoundException('User not found');
-
-    // delegate password update to usersService (should hash password properly)
-    await this.usersService.updatePassword(user.resetToken!, newPassword);
-
-    // mark token used
-    match.used = true;
-    await this.tokenRepo.save(match);
-
-    return { ok: true };
   }
+
+  if (!match) throw new BadRequestException('Invalid or expired token');
+
+  const user = match.user;
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  // FIXED: use user.id (number)
+  await this.usersService.updatePassword(user.id, newPassword);
+
+  match.used = true;
+  await this.tokenRepo.save(match);
+
+  return { ok: true };
+}
+
+
 }

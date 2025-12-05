@@ -19,29 +19,22 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/forgot-password/request`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-          body: JSON.stringify({ email }),
-        }
-      );
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/forgot-password/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
       const data = await res.json();
+      console.log("Forgot password response:", data);
 
       if (!res.ok) throw new Error(data.message || "Failed to send reset link");
 
       setSuccess("Reset link sent! Check your email.");
       setEmail("");
-
     } catch (err: any) {
-      setError(err.message);
+      console.error("Forgot password error:", err);
+      setError(err.message || "Internal server error");
     } finally {
       setLoading(false);
     }
@@ -50,9 +43,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-900">
       <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md text-white">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          Forgot Password
-        </h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">Forgot Password</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

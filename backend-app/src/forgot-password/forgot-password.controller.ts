@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
 import { ForgotPasswordService } from './forgot-password.service';
 import { RequestResetDto } from './dto/request-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -7,15 +7,19 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 export class ForgotPasswordController {
   constructor(private readonly fps: ForgotPasswordService) {}
 
-  // request reset - sends email if account exists (returns success either way)
+  // Request a password reset
   @Post('request')
   async requestReset(@Body() body: RequestResetDto) {
+    if (!body.email) throw new BadRequestException('Email is required');
     return this.fps.requestReset(body.email);
   }
 
-  // perform reset using token
+  // Reset password using token
   @Post('reset')
   async reset(@Body() body: ResetPasswordDto) {
+    if (!body.token || !body.newPassword) {
+      throw new BadRequestException('Token and new password are required');
+    }
     return this.fps.resetPassword(body.token, body.newPassword);
   }
 }
