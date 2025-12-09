@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export default function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const router = useRouter(); // ✅ for redirect
+  const router = useRouter(); 
   const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
@@ -35,7 +35,6 @@ export default function ResetPasswordForm() {
 
       if (res.ok) {
         setMessage("Password reset successful! Redirecting to login...");
-        // ✅ redirect to login after short delay
         setTimeout(() => router.push("/login"), 2000);
       } else {
         setMessage(data.message || "Something went wrong.");
